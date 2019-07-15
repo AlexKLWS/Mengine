@@ -1,4 +1,4 @@
-CMAKE_MINIMUM_REQUIRED( VERSION 2.6 )
+CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
                                              
 project( lz4 )
 
@@ -11,6 +11,7 @@ ${SOURCE_DIR}/lib/lz4hc.c
 )
 
 if(WIN32)
+    ADD_DEFINITIONS(-DLZ4HC_HEAPMODE=0)
     ADD_DEFINITIONS(-DLZ4_FORCE_MEMORY_ACCESS=2)
 endif()
 

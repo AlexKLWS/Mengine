@@ -1,19 +1,30 @@
 #pragma once
 
-#include "BasePrototypeGenerator.h"
+#include "Interface/ScriptServiceInterface.h"
+#include "Interface/VocabularyServiceInterface.h"
 
-#include "Core/ConstString.h"
+#include "FactoryPrototypeGenerator.h"
 
-#include "Factory/FactoryPool.h"
-
-#include "Logger/Logger.h"
+#include "Kernel/FactoryPool.h"
+#include "Kernel/Scriptable.h"
+#include "Kernel/AssertionMemoryPanic.h"
+#include "Kernel/Logger.h"
 
 namespace Mengine
 {
-	template<class Type, uint32_t Count>
-	class ScriptablePrototypeGenerator
-		: public BasePrototypeGenerator
-	{
+    template<class Type, uint32_t Count>
+    class ScriptablePrototypeGenerator
+        : public FactoryPrototypeGenerator
+    {
+    public:
+        ScriptablePrototypeGenerator()
+        {
+        }
+
+        ~ScriptablePrototypeGenerator() override
+        {
+        }
+
     protected:
         typedef IntrusivePtr<Type> TypePtr;
 
@@ -26,37 +37,39 @@ namespace Mengine
     protected:
         FactoryPtr _initializeFactory() override
         {
-            const ConstString & prototype = this->getPrototype();
+            if( SERVICE_EXIST( ScriptServiceInterface ) == true )
+            {
+                const ConstString & prototype = this->getPrototype();
 
-            m_scriptWrapper = SCRIPT_SERVICE()
-                ->getWrapper( prototype );
+                ScriptWrapperInterfacePtr scriptWrapper = VOCABULARY_GET( STRINGIZE_STRING_LOCAL( "ClassWrapping" ), prototype );
 
-            FactoryPtr factory = new FactoryPool<Type, Count>();
+                MENGINE_ASSERTION_MEMORY_PANIC( scriptWrapper, nullptr );
+
+                m_scriptWrapper = scriptWrapper;
+            }
+
+            FactoryPtr factory = Helper::makeFactoryPool<Type, Count>();
 
             return factory;
         }
 
-	protected:
-		PointerFactorable generate() override
-		{
+    protected:
+        FactorablePointer generate( const Char * _doc ) override
+        {
             const FactoryPtr & factory = this->getFactory();
 
-            TypePtr scriptable = factory->createObject();
+            TypePtr scriptable = factory->createObject( _doc );
 
-			if( scriptable == nullptr )
-			{
-				LOGGER_ERROR("ScriptablePrototypeGenerator::generate can't generate %s %s"
-                    , this->getCategory().c_str()
-                    , this->getPrototype().c_str()
-					);
-
-				return nullptr;
-			}
+            MENGINE_ASSERTION_MEMORY_PANIC( scriptable, nullptr, "can't generate '%s:%s' doc '%s'"
+                , this->getCategory().c_str()
+                , this->getPrototype().c_str()
+                , _doc
+            );
 
             this->setupScriptable( scriptable );
 
-			return scriptable;
-		}
+            return scriptable;
+        }
 
     protected:
         void setupScriptable( const ScriptablePtr & _scriptable )
@@ -64,7 +77,7 @@ namespace Mengine
             _scriptable->setScriptWrapper( m_scriptWrapper );
         }
 
-	protected:
+    protected:
         ScriptWrapperInterfacePtr m_scriptWrapper;
-	};
+    };
 }

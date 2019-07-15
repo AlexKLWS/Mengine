@@ -2,22 +2,11 @@ cmake_minimum_required(VERSION 2.4.5 FATAL_ERROR)
 
 project(python)
 
-SET( SOURCE_DIR ${THIRDPARTY_DIR}/Python )
+SET(SOURCE_DIR ${THIRDPARTY_DIR}/Python)
 
 REMOVE_DEFINITIONS(-Doverride)
 
-include(ConfigureChecks.cmake)
-
-#option(WITH_THREAD "compile in rudimentary thread support" OFF)
-#option(WITH_DOC_STRINGS "Enable if you want documentation strings in extension modules" OFF)
-#option(Py_USING_UNICODE "Enable unicode support" ON)
-#option(Py_DEBUG "Build debugging interpreter" OFF)
-#option(WITH_PYMALLOC "Define if you want to compile in Python-specific mallocs" ON)
-#option(HAVE_LARGEFILE_SUPPORT "Large file support " ON)
-
 set(extraLibs)
-
-set(THREAD_SRC)
 
 if(HAVE_LIBM)
   set(extraLibs ${extraLibs} ${HAVE_LIBM})
@@ -26,10 +15,6 @@ endif()
 if(HAVE_LIBUTIL)
   set(extraLibs ${extraLibs} ${HAVE_LIBUTIL})
 endif()
-
-set(MACHDEP_SRCS ) #conf 
-
-set(SIGNAL_SRCS )    # configure
 
 set(MOD_SRCS )
 
@@ -53,21 +38,13 @@ macro(ADD_PYTHON_MODULE _NAME _STATIC_SRCS)
   endif()
 endmacro()
 
-if(WIN32)
-  set(PY_POSIX_NAME nt)
-else()
-  set(PY_POSIX_NAME posix)
-endif()
-
-#add_python_module(${PY_POSIX_NAME}  MOD_SRCS ${SOURCE_DIR}/Modules/posixmodule.c)
-
 add_python_module(signal    MOD_SRCS ${SOURCE_DIR}/Modules/signalmodule.c)
 add_python_module(errno     MOD_SRCS ${SOURCE_DIR}/Modules/errnomodule.c)
 #add_python_module(pwd       MOD_SRCS ${TRUE_DIR}/Modules/pwdmodule.c)
 add_python_module(_sre      MOD_SRCS ${SOURCE_DIR}/Modules/_sre.c)
 add_python_module(_codecs   MOD_SRCS ${SOURCE_DIR}/Modules/_codecsmodule.c)
 #add_python_module(zipimport MOD_SRCS ${SOURCE_DIR}/Modules/zipimport.c)
-#add_python_module(zlib MOD_SRCS ${SOURCE_DIR}/Modules/zlibmodule.c)
+add_python_module(zlib MOD_SRCS ${SOURCE_DIR}/Modules/zlibmodule.c)
 add_python_module(_symtable MOD_SRCS ${SOURCE_DIR}/Modules/symtablemodule.c)
 add_python_module(xxsubtype MOD_SRCS ${SOURCE_DIR}/Modules/xxsubtype.c)
 add_python_module(_struct MOD_SRCS ${SOURCE_DIR}/Modules/_struct.c)
@@ -75,7 +52,35 @@ add_python_module(binascii MOD_SRCS ${SOURCE_DIR}/Modules/binascii.c)
 add_python_module(unicodedata MOD_SRCS ${SOURCE_DIR}/Modules/unicodedata.c)
 add_python_module(cPickle MOD_SRCS ${SOURCE_DIR}/Modules/cPickle.c)
 add_python_module(cStringIO MOD_SRCS ${SOURCE_DIR}/Modules/cStringIO.c)
-add_python_module(cStringIO MOD_SRCS ${SOURCE_DIR}/Modules/_weakref.c)
+add_python_module(_weakref MOD_SRCS ${SOURCE_DIR}/Modules/_weakref.c)
+
+if(WIN32 AND MSVC)
+    add_python_module(nt  MOD_SRCS ${SOURCE_DIR}/Modules/posixmodule.c)
+
+    add_python_module(_lsprof MOD_SRCS ${SOURCE_DIR}/Modules/_lsprof.c)
+    add_python_module(rotatingtree MOD_SRCS ${SOURCE_DIR}/Modules/rotatingtree.c)
+    add_python_module(errno MOD_SRCS ${SOURCE_DIR}/Modules/errnomodule.c)
+    add_python_module(_functools MOD_SRCS ${SOURCE_DIR}/Modules/_functoolsmodule.c)
+    add_python_module(time MOD_SRCS ${SOURCE_DIR}/Modules/timemodule.c)
+endif()
+
+
+set(DEBUG_SRCS)
+
+if (CMAKE_BUILD_TYPE MATCHES "Debug")
+    if(WIN32 AND MSVC)
+        set(DEBUG_SRCS ${DEBUG_SRCS} ${SOURCE_DIR}/Python/thread.c)
+    endif()
+endif()
+
+set(PLATFORM_SRCS)
+if(WIN32)
+    set(PLATFORM_SRCS 
+        )
+endif()
+
+
+
 
 
 set( HAVE_CHROOT 0 )
@@ -83,9 +88,7 @@ set( HAVE_FSYNC 0 )
 set( HAVE_WAIT3 0 )
 set( HAVE_WAIT4 0 )
 set( HAVE_DEVICE_MACROS 0 )
-file(MAKE_DIRECTORY ${python_BINARY_DIR}/Modules)
 
-file(WRITE ${python_BINARY_DIR}/Modules/Setup "#created by cmake, do not edit\n")
 configure_file(Modified/wininit.c ${SOURCE_DIR}/Modules/wininit.c COPYONLY)
 
 configure_file(Modified/pymem.h ${SOURCE_DIR}/Include/pymem.h COPYONLY)
@@ -199,24 +202,22 @@ set(PYTHON_SRCS ${SOURCE_DIR}/Python/_warnings.c
                 ${SOURCE_DIR}/Python/traceback.c 
                 ${SOURCE_DIR}/Python/getopt.c 
 				${SOURCE_DIR}/Python/pystrcmp.c
-                ${SOURCE_DIR}/Python/pystrtod.c 
+                ${SOURCE_DIR}/Python/pystrtod.c
 				${SOURCE_DIR}/Python/formatter_unicode.c
 				${SOURCE_DIR}/Python/formatter_string.c
-                ${SOURCE_DIR}/Python/pyctype.c                
+                ${SOURCE_DIR}/Python/pyctype.c
                 ${SOURCE_DIR}/Python/dtoa.c
                 ${SOURCE_DIR}/Python/random.c
-                ${THREAD_SRC}
-                ${DYNLOAD_SRC}
                 )
 
-set(MODULE_SRCS ${SOURCE_DIR}/Modules/main.c 
+set(MODULE_SRCS ${SOURCE_DIR}/Modules/main.c
                 ${SOURCE_DIR}/Modules/gcmodule.c
                 ${SOURCE_DIR}/Modules/mathmodule.c
                 ${SOURCE_DIR}/Modules/_math.c
                 ${MOD_SRCS} )
 
 set( MODULE_SRCS ${MODULE_SRCS} Modified/config.c )
-set( MODULE_SRCS ${MODULE_SRCS} Modified/mockup.c )                
+set( MODULE_SRCS ${MODULE_SRCS} Modified/mockup.c )
 				
 if( NOT WIN32 )
 	set( MODULE_SRCS ${MODULE_SRCS} ${SOURCE_DIR}/Modules/getpath.c )
@@ -232,6 +233,7 @@ set_source_files_properties(${SOURCE_DIR}/Modules/getpath.c PROPERTIES COMPILE_F
 include_directories(${SOURCE_DIR}/Include ${SOURCE_DIR})
 include_directories(${SOURCE_DIR}/Python)
 include_directories(${THIRDPARTY_DIR}/stdex/include)
+include_directories(${THIRDPARTY_DIR}/zlib)
 
 include_directories(${SOURCE_DIR}/PC)
 
@@ -253,6 +255,9 @@ add_library( ${PROJECT_NAME} STATIC
               ${PARSER_SRCS}
               ${OBJECT_SRCS}
               ${PYTHON_SRCS}
-              ${MODULE_SRCS} )
+              ${PLATFORM_SRCS}
+              ${MODULE_SRCS} 
+              ${DEBUG_SRCS}
+              )
 
 target_link_libraries(${PROJECT_NAME} ${extraLibs})

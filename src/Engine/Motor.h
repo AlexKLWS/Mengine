@@ -2,47 +2,52 @@
 
 #include "Interface/ServiceInterface.h"
 
+#include "Kernel/Factorable.h"
 #include "Kernel/Updatable.h"
+#include "Kernel/BaseUpdation.h"
+#include "Kernel/ConstString.h"
+#include "Kernel/Node.h"
 
-#include "Factory/Factorable.h"
-#include "Core/ConstString.h"
 #include "math/vec3.h"
 
-#include "Config/Map.h"
+#include "Config/Vector.h"
 
 namespace Mengine
 {
-	class Node;
+    class Motor
+        : public Factorable
+        , public Updatable
+        , public BaseUpdation
+    {
+    public:
+        DECLARE_UPDATABLE();
 
-	class Motor
-		: public Factorable
-		, public Updatable
-	{
-	public:
-		Motor();
-		~Motor() override;
-        
-	public:
-		void setNode(Node * _node);
-		Node * getNode() const;
+    public:
+        Motor();
+        ~Motor() override;
 
-	public:
-		void addVelocity(const ConstString & _name, const mt::vec3f & _velocity);
-		bool hasVelocity(const ConstString & _name) const;
-		mt::vec3f getVelocity(const ConstString & _name) const;
+    public:
+        void setNode( const NodePtr & _node );
+        const NodePtr & getNode() const;
 
-	protected:
-		void _update(float _current, float _timing) override;
+    public:
+        void addVelocity( const ConstString & _name, const mt::vec3f & _velocity );
+        bool hasVelocity( const ConstString & _name ) const;
+        mt::vec3f getVelocity( const ConstString & _name ) const;
 
-	protected:
-		Node * m_node;
+    protected:
+        void update( const UpdateContext * _context ) override;
 
-		struct VelocityDesc
-		{
-			mt::vec3f velocity;
-		};
+    protected:
+        NodePtr m_node;
 
-		typedef Map<ConstString, VelocityDesc> TMapVelocity;
-		TMapVelocity m_velocities;
-	};
+        struct VelocityDesc
+        {
+            ConstString name;
+            mt::vec3f velocity;
+        };
+
+        typedef Vector<VelocityDesc> VectorVelocities;
+        VectorVelocities m_velocities;
+    };
 }

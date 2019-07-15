@@ -4,150 +4,222 @@
 
 namespace Mengine
 {
-	//////////////////////////////////////////////////////////////////////////
-	Colorable::Colorable()
-		: m_invalidateColor(false)
-	{
-	}
+    //////////////////////////////////////////////////////////////////////////
+    Colorable::Colorable()
+        : m_localTransparent( false )
+        , m_personalTransparent( false )
+        , m_invalidateRelationColor( false )
+    {
+    }
     //////////////////////////////////////////////////////////////////////////
     Colorable::~Colorable()
     {
     }
-	//////////////////////////////////////////////////////////////////////////
-	void Colorable::setPersonalColor( const ColourValue& _color )
-	{
-		if( m_colorPersonal == _color )
-		{
-			return;
-		}
+    //////////////////////////////////////////////////////////////////////////
+    void Colorable::setPersonalColor( const Color& _color )
+    {
+        if( m_personalColor == _color )
+        {
+            return;
+        }
 
-		m_colorPersonal = _color;
+        m_personalColor = _color;
+
+        this->updatePersonalTransparent_();
 
         this->_setPersonalColor( _color );
 
-		this->invalidateColor();
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void Colorable::setPersonalAlpha( float _alpha )
-	{
-		if( mt::equal_f_f( m_colorPersonal.getA(), _alpha) == true )
-		{ 
-			return;
-		}
+        this->invalidateColor();
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void Colorable::setPersonalAlpha( float _alpha )
+    {
+        if( mt::equal_f_f( m_personalColor.getA(), _alpha ) == true )
+        {
+            return;
+        }
 
-		m_colorPersonal.setA( _alpha );
+        m_personalColor.setA( _alpha );
+
+        this->updatePersonalTransparent_();
 
         this->_setPersonalAlpha( _alpha );
 
-		this->invalidateColor();
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void Colorable::setLocalColor( const ColourValue& _color )
-	{
-		if( m_colorLocal == _color )
-		{
-			return;
-		}
-
-		m_colorLocal = _color;
-
-		this->invalidateColor();
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void Colorable::setLocalColorR( float _value )
-	{
-		if( mt::equal_f_f( m_colorLocal.getR(), _value ) == true )
-		{
-			return;
-		}
-
-		m_colorLocal.setR( _value );
-
-		this->invalidateColor();
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void Colorable::setLocalColorG( float _value )
-	{
-		if( mt::equal_f_f( m_colorLocal.getG(), _value ) == true )
-		{
-			return;
-		}
-
-		m_colorLocal.setG( _value );
-
-		this->invalidateColor();
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void Colorable::setLocalColorB( float _value )
-	{
-		if( mt::equal_f_f( m_colorLocal.getB(), _value ) == true )
-		{
-			return;
-		}
-
-		m_colorLocal.setB( _value );
-
-		this->invalidateColor();
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void Colorable::setLocalColorRGB( float _r, float _g, float _b )
-	{ 
-        m_colorLocal.setRGB( _r, _g, _b );
-
-		this->invalidateColor();
-	}
+        this->invalidateColor();
+    }
     //////////////////////////////////////////////////////////////////////////
-    void Colorable::setLocalColorRGBA( float _r, float _g, float _b, float _a )
+    void Colorable::setLocalColor( const Color& _color )
     {
-        m_colorLocal.setRGBA( _r, _g, _b, _a );
+        if( m_localColor == _color )
+        {
+            return;
+        }
+
+        m_localColor = _color;
+
+        this->updateLocalTransparent_();
 
         this->invalidateColor();
     }
-	//////////////////////////////////////////////////////////////////////////
-	void Colorable::setLocalAlpha( float _value )
-	{
-		if( mt::equal_f_f( m_colorLocal.getA(), _value ) == true )
-		{
-			return;
-		}
-
-		m_colorLocal.setA( _value );
-
-		this->invalidateColor();
-	}
-	//////////////////////////////////////////////////////////////////////////
-	const ColourValue& Colorable::updateRelationColor( const ColourValue& _parentColor ) const
-	{
-		m_invalidateColor = false;
-
-		m_colorRelation = m_colorLocal;
-		m_colorRelation *= _parentColor;
-
-		return m_colorRelation;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void Colorable::invalidateColor()
-	{
-		m_invalidateColor = true;
-
-		this->_invalidateColor();
-	}
     //////////////////////////////////////////////////////////////////////////
-    void Colorable::_setPersonalColor( const ColourValue& _color )
+    void Colorable::setLocalColorR( float _value )
     {
-        (void)_color;
+        if( mt::equal_f_f( m_localColor.getR(), _value ) == true )
+        {
+            return;
+        }
+
+        m_localColor.setR( _value );
+
+        this->invalidateColor();
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void Colorable::setLocalColorG( float _value )
+    {
+        if( mt::equal_f_f( m_localColor.getG(), _value ) == true )
+        {
+            return;
+        }
+
+        m_localColor.setG( _value );
+
+        this->invalidateColor();
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void Colorable::setLocalColorB( float _value )
+    {
+        if( mt::equal_f_f( m_localColor.getB(), _value ) == true )
+        {
+            return;
+        }
+
+        m_localColor.setB( _value );
+
+        this->invalidateColor();
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void Colorable::setLocalColorRGB( float _r, float _g, float _b )
+    {
+        m_localColor.setRGB( _r, _g, _b );
+
+        this->invalidateColor();
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void Colorable::setLocalColorRGBA( float _r, float _g, float _b, float _a )
+    {
+        m_localColor.setRGBA( _r, _g, _b, _a );
+
+        this->updateLocalTransparent_();
+
+        this->invalidateColor();
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void Colorable::setLocalAlpha( float _value )
+    {
+        if( mt::equal_f_f( m_localColor.getA(), _value ) == true )
+        {
+            return;
+        }
+
+        m_localColor.setA( _value );
+
+        this->updateLocalTransparent_();
+
+        this->invalidateColor();
+    }
+    //////////////////////////////////////////////////////////////////////////
+    const Color& Colorable::updateRelationColor( const Color& _parentColor ) const
+    {
+        m_invalidateRelationColor = false;
+
+        m_relationColor = m_localColor;
+        m_relationColor *= _parentColor;
+
+        return m_relationColor;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void Colorable::_setLocalTransparent( bool _transparent )
+    {
+        MENGINE_UNUSED( _transparent );
+
+        //Empty
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void Colorable::_setPersonalTransparent( bool _transparent )
+    {
+        MENGINE_UNUSED( _transparent );
+
+        //Empty
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void Colorable::updateLocalTransparent_()
+    {
+        if( m_localTransparent == false )
+        {
+            if( m_localColor.getA() < 0.00390625f )
+            {
+                m_localTransparent = true;
+
+                this->_setLocalTransparent( true );
+            }
+        }
+        else
+        {
+            if( m_localColor.getA() > 0.00390625f )
+            {
+                m_localTransparent = false;
+
+                this->_setLocalTransparent( false );
+            }
+        }
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void Colorable::updatePersonalTransparent_()
+    {
+        if( m_personalTransparent == false )
+        {
+            if( m_personalColor.getA() < 0.00390625f )
+            {
+                m_personalTransparent = true;
+
+                this->_setPersonalTransparent( true );
+            }
+        }
+        else
+        {
+            if( m_personalColor.getA() > 0.00390625f )
+            {
+                m_personalTransparent = false;
+
+                this->_setPersonalTransparent( false );
+            }
+        }
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void Colorable::invalidateColor()
+    {
+        m_invalidateRelationColor = true;
+
+        this->_invalidateColor();
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void Colorable::_setPersonalColor( const Color& _color )
+    {
+        MENGINE_UNUSED( _color );
+
         //Empty
     }
     //////////////////////////////////////////////////////////////////////////
     void Colorable::_setPersonalAlpha( float _alpha )
     {
-        (void)_alpha;
+        MENGINE_UNUSED( _alpha );
+
         //Empty
     }
-	//////////////////////////////////////////////////////////////////////////
-	void Colorable::_invalidateColor()
-	{
-		//Empty
-	}
+    //////////////////////////////////////////////////////////////////////////
+    void Colorable::_invalidateColor()
+    {
+        //Empty
+    }
 }
 

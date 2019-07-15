@@ -1,0 +1,3 @@
+LIBRARY		"TTFPlugin"
+EXPORTS 	
+	dllCreatePlugin 	@1

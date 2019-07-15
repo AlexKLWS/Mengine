@@ -2,49 +2,47 @@
 
 #include "HotSpot.h"
 
-#include "ResourceHIT.h"
+#include "ResourceTestPick.h"
 
 namespace Mengine
 {
-	class HotSpotImage
-		: public HotSpot
-	{
-	public:
-		HotSpotImage();
-		~HotSpotImage() override;
+    class HotSpotImage
+        : public HotSpot
+    {
+    public:
+        HotSpotImage();
+        ~HotSpotImage() override;
 
-	public:
-		void setResourceHIT( const ResourceHITPtr & _resourceHIT );
-		const ResourceHITPtr & getResourceHIT() const;
+    public:
+        void setResourceTestPick( const ResourceTestPickPtr & _resourceTestPick );
+        const ResourceTestPickPtr & getResourceTestPick() const;
 
-	public:
-		void setAlphaTest( float _value );
-		float getAlphaTest() const;
+    public:
+        void setAlphaTest( float _value );
+        float getAlphaTest() const;
 
         uint32_t getWidth() const;
         uint32_t getHeight() const;
 
-	protected:
-		bool testPoint( const RenderCameraInterfacePtr & _camera, const RenderViewportInterfacePtr & _viewport, const Resolution & _contentResolution, const mt::vec2f & _point ) const override;
-		bool testRadius( const RenderCameraInterfacePtr & _camera, const RenderViewportInterfacePtr & _viewport, const Resolution & _contentResolution, const mt::vec2f & _point, float _radius ) const override;
-		bool testPolygon( const RenderCameraInterfacePtr & _camera, const RenderViewportInterfacePtr & _viewport, const Resolution & _contentResolution, const mt::vec2f & _point, const Polygon & _polygon ) const override;
-
-	protected:
-		void _updateBoundingBox( mt::box2f & _boundingBox ) const override;
-
-	protected:
-		void _debugRender( RenderServiceInterface * _renderService, const RenderContext * _state ) override;
+    protected:
+        bool _compile() override;
+        void _release() override;
 
     protected:
-		bool _compile() override;
-		void _release() override;
+        bool testPoint( const RenderCameraInterfacePtr & _camera, const RenderViewportInterfacePtr & _viewport, const Resolution & _contentResolution, const mt::vec2f & _point ) const override;
+        bool testRadius( const RenderCameraInterfacePtr & _camera, const RenderViewportInterfacePtr & _viewport, const Resolution & _contentResolution, const mt::vec2f & _point, float _radiusx, float _radiusy ) const override;
+        bool testPolygon( const RenderCameraInterfacePtr & _camera, const RenderViewportInterfacePtr & _viewport, const Resolution & _contentResolution, const mt::vec2f & _point, const Polygon & _polygon ) const override;
 
-	protected:
-        ResourceHolder<ResourceHIT> m_resourceHIT;
+    public:
+        void getWorldBoundingBox( mt::box2f * _bb ) const;
+        void getScreenBoundingBox( const RenderCameraInterfacePtr & _camera, const RenderViewportInterfacePtr & _viewport, const Resolution & _contentResolution, mt::box2f * _bb ) const;
 
-		float m_alphaTest;		
-	};
+    protected:
+        ResourceTestPickPtr m_resourceTestPick;
+
+        float m_alphaTest;
+    };
     //////////////////////////////////////////////////////////////////////////
-    typedef IntrusivePtr<HotSpotImage> HotSpotImagePtr;
+    typedef IntrusivePtr<HotSpotImage, HotSpot> HotSpotImagePtr;
     //////////////////////////////////////////////////////////////////////////
-}	
+}

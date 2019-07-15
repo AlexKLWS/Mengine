@@ -1,15 +1,17 @@
 #pragma once
 
-#include "Interface/MovieKeyFrameInterface.h"
+//#include "Interface/MovieKeyFrameInterface.h"
 
 #include "Kernel/Node.h"
+#include "Kernel/BaseRender.h"
 #include "Kernel/Materialable.h"
-
 #include "Kernel/Surface.h"
-
-#include "Core/ColourValue.h"
-#include "Core/ValueInterpolator.h"
-#include "Core/RenderVertex2D.h"
+#include "Kernel/Color.h"
+#include "Kernel/ValueInterpolator.h"
+#include "Kernel/VectorRenderVertex2D.h"
+#include "Kernel/VectorRenderIndex.h"
+#include "Kernel/BaseEventation.h"
+#include "Kernel/BaseUpdation.h"
 
 #include "Config/Vector.h"
 
@@ -17,98 +19,102 @@
 #include "math/vec4.h"
 #include "math/mat4.h"
 
-#include "pybind/pybind.hpp"
-
 namespace Mengine
 {
-	//////////////////////////////////////////////////////////////////////////
-	enum MeshgetEventFlag
-	{
-		EVENT_MESHGET_UPDATE = 0
-	};
+    //////////////////////////////////////////////////////////////////////////
+    typedef Vector<mt::vec3f> VectorPositions;
+    typedef Vector<mt::vec2f> VectorUVs;
+    typedef Vector<mt::vec4f> VectorColors;
+    //////////////////////////////////////////////////////////////////////////
+    enum MeshgetEventFlag
+    {
+        EVENT_MESHGET_UPDATE = 0
+    };
     //////////////////////////////////////////////////////////////////////////
     class MeshgetEventReceiver
-        : public EventReceiver
+        : public EventReceiverInterface
     {
     public:
-        virtual void onMeshgetUpdate( float _current, float _timing ) = 0;
+        virtual void onMeshgetUpdate( const UpdateContext * _context ) = 0;
     };
     //////////////////////////////////////////////////////////////////////////
     typedef IntrusivePtr<MeshgetEventReceiver> MeshgetEventReceiverPtr;
-	//////////////////////////////////////////////////////////////////////////
-	class Meshget
-		: public Node
-		, public Eventable
-	{
-        EVENT_RECEIVER( MeshgetEventReceiver );
+    //////////////////////////////////////////////////////////////////////////
+    class Meshget
+        : public Node
+        , public BaseUpdation
+        , public BaseRender
+        , public BaseEventation
+    {
+        DECLARE_VISITABLE( Node );
+        DECLARE_UPDATABLE();
+        DECLARE_RENDERABLE();
+        DECLARE_EVENTABLE( MeshgetEventReceiver );
 
-	public:
-		Meshget();
-		~Meshget() override;
+    public:
+        Meshget();
+        ~Meshget() override;
 
     public:
         void setSurface( const SurfacePtr & _surface );
         const SurfacePtr & getSurface() const;
 
-	public:
-		bool setVertices( const pybind::list & _positions, const pybind::list & _uv, const pybind::list & _colors, const pybind::list & _indices );
+    public:
+        bool setVertices( const VectorPositions & _positions, const VectorUVs & _uv, const VectorColors & _colors, const VectorRenderIndex & _indices );
 
-	protected:
-		bool _compile() override;
-		void _release() override;
+    protected:
+        bool _compile() override;
+        void _release() override;
 
-	protected:
-		void _update( float _current, float _timing ) override;
-		void _render( RenderServiceInterface * _renderService, const RenderContext * _state ) override;
+    protected:
+        void update( const UpdateContext * _context ) override;
+        void render( const RenderContext * _context ) const override;
 
-	protected:
-		void _updateBoundingBox( mt::box2f & _boundingBox ) const override;
+    protected:
+        void _updateBoundingBox( mt::box2f & _boundingBox, mt::box2f ** _boundingBoxCurrent ) const override;
 
-	protected:
-		void _invalidateColor() override;
-		void _invalidateWorldMatrix() override;
+    protected:
+        void _invalidateColor() override;
+        void _invalidateWorldMatrix() override;
 
-	protected:
-		void invalidateVerticesWM();
-		void updateVerticesWM() const;
+    protected:
+        void invalidateVerticesWM();
+        void updateVerticesWM() const;
 
-	protected:
-		void invalidateVerticesColor();
-		void updateVerticesColor() const;
+    protected:
+        void invalidateVerticesColor();
+        void updateVerticesColor() const;
 
-	protected:
-		inline const TVectorRenderVertex2D & getVerticesWM() const;
-        
-	protected:
+    protected:
+        MENGINE_INLINE const VectorRenderVertex2D & getVerticesWM() const;
+
+    protected:
         SurfacePtr m_surface;
-		
-		typedef Vector<mt::vec3f> TVectorPosition;
-		typedef Vector<mt::vec2f> TVectorUV;
-		typedef Vector<mt::vec4f> TVectorColor;
-		TVectorPosition m_positions;
-		TVectorUV m_uvs;
-		TVectorColor m_colors;
 
-		TVectorRenderIndices m_indices;
+        VectorPositions m_positions;
+        VectorUVs m_uvs;
+        VectorColors m_colors;
 
-		mutable TVectorRenderVertex2D m_verticesWM;
-			
-		mutable bool m_invalidateVerticesWM;
-		mutable bool m_invalidateVerticesColor;
-	};
-	//////////////////////////////////////////////////////////////////////////
-	inline const TVectorRenderVertex2D & Meshget::getVerticesWM() const
-	{
-		if( m_invalidateVerticesWM == true )
-		{
-			this->updateVerticesWM();
-		}
+        VectorRenderIndex m_indices;
 
-		if( m_invalidateVerticesColor == true )
-		{
-			this->updateVerticesColor();
-		}
+        mutable VectorRenderVertex2D m_verticesWM;
 
-		return m_verticesWM;
-	}
+        mutable bool m_invalidateVerticesWM;
+        mutable bool m_invalidateVerticesColor;
+    };
+    //////////////////////////////////////////////////////////////////////////
+    MENGINE_INLINE const VectorRenderVertex2D & Meshget::getVerticesWM() const
+    {
+        if( m_invalidateVerticesWM == true )
+        {
+            this->updateVerticesWM();
+        }
+
+        if( m_invalidateVerticesColor == true )
+        {
+            this->updateVerticesColor();
+        }
+
+        return m_verticesWM;
+    }
 }

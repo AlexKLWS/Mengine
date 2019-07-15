@@ -6,18 +6,18 @@ set BUILD_TYPE=Release
 
 set ANDROID_SDK=%LOCALAPPDATA%\Android\sdk
 set ANDROID_NDK=%ANDROID_SDK%\ndk-bundle
-set ANDROID_SYSROOT="%ANDROID_NDK%/sysroot"
-set MAKE_PROGRAM="%ANDROID_SDK%\cmake\3.6.4111459\bin\ninja.exe"
-set TOOLCHAIN_FILE="%ANDROID_NDK%\build\cmake\android.toolchain.cmake"
-set CMAKE_EXE="%ANDROID_SDK%\cmake\3.6.4111459\bin\cmake.exe"
+set ANDROID_SYSROOT=%ANDROID_NDK%\sysroot
+set MAKE_PROGRAM=%ANDROID_SDK%\cmake\3.6.4111459\bin\ninja.exe
+set TOOLCHAIN_FILE=%ANDROID_NDK%\build\cmake\android.toolchain.cmake
+set CMAKE_EXE=%ANDROID_SDK%\cmake\3.6.4111459\bin\cmake.exe
 set CMAKE_PATH="%CD%\..\..\CMake\Depends_Android_SDL"
-set BUILD_TEMP_DIR="%CD%\..\..\build_temp\build_android_sdl_%BUILD_TYPE%"
+set BUILD_TEMP_DIR="%CD%\..\..\build_temp\build_android_sdl"
 
 @mkdir %BUILD_TEMP_DIR%\%BUILD_TYPE%
 @pushd %BUILD_TEMP_DIR%\%BUILD_TYPE%
 
 %CMAKE_EXE% -G "Android Gradle - Ninja" ^
-    -DANDROID_PLATFORM=android-15 ^
+    -DANDROID_PLATFORM=android-18 ^
     -DANDROID_ARM_NEON=TRUE ^
     -DANDROID_ABI=armeabi-v7a ^
     -DANDROID_STL=c++_shared ^
@@ -27,8 +27,6 @@ set BUILD_TEMP_DIR="%CD%\..\..\build_temp\build_android_sdl_%BUILD_TYPE%"
     -DCMAKE_MAKE_PROGRAM=%MAKE_PROGRAM% ^
     -DCMAKE_TOOLCHAIN_FILE=%TOOLCHAIN_FILE% ^
     -DCMAKE_SYSROOT_COMPILE=%ANDROID_SYSROOT% ^
-    -DCMAKE_C_FLAGS="-std=c11" ^
-    -DCMAKE_CXX_FLAGS="-std=c++14 -frtti -fexceptions" ^
     %CMAKE_PATH%
     
 %CMAKE_EXE% --build .\ --config %BUILD_TYPE%

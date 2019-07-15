@@ -2,31 +2,27 @@
 
 #include "Kernel/Resource.h"
 
-#include "Core/FilePath.h"
+#include "Kernel/FilePath.h"
 
 namespace Mengine
 {
-	class ResourceFile
-		: public Resource
-	{
-		DECLARE_VISITABLE( Resource );
+    class ResourceFile
+        : public Resource
+    {
+        DECLARE_VISITABLE( Resource );
 
-	public:
-		ResourceFile();
-		~ResourceFile() override;
+    public:
+        ResourceFile();
+        ~ResourceFile() override;
 
-	public:
-		bool _loader( const Metabuf::Metadata * _parser ) override;
+    public:
+        void setFilePath( const FilePath & _filePath );
+        const FilePath & getFilePath() const;
 
-	public:
-		bool _isValid() const override;
-        
-	public:
-		const FilePath & getFilePath() const;
-
-	protected:
-		FilePath m_path;
-	};
-	//////////////////////////////////////////////////////////////////////////
-	typedef IntrusivePtr<ResourceFile> ResourceFilePtr;
+    protected:
+        FilePath m_filePath;
+    };
+    //////////////////////////////////////////////////////////////////////////
+    typedef IntrusivePtr<ResourceFile> ResourceFilePtr;
+    //////////////////////////////////////////////////////////////////////////
 }

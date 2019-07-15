@@ -1,18 +1,19 @@
 #include "Arrow.h"
 
-#include "Interface/RenderSystemInterface.h"
-#include "Interface/InputSystemInterface.h"
+#include "Interface/InputServiceInterface.h"
 #include "Interface/ApplicationInterface.h"
 
 #include "Kernel/RenderCameraHelper.h"
+#include "Kernel/FactorableUnique.h"
+#include "Kernel/Assertion.h"
 
-#include "Factory/FactorableUnique.h"
+#include "Config/Config.h"
 
 namespace Mengine
 {
     //////////////////////////////////////////////////////////////////////////
     class Arrow::ArrowInputMousePositionProvider
-        : public FactorableUnique<Factorable>
+        : public Factorable
         , public InputMousePositionProviderInterface
     {
     public:
@@ -24,7 +25,7 @@ namespace Mengine
         ~ArrowInputMousePositionProvider() override
         {
         }
-        
+
     protected:
         void onMousePositionChange( uint32_t _touchId, const mt::vec2f & _position ) override
         {
@@ -33,11 +34,13 @@ namespace Mengine
                 return;
             }
 
-            const RenderCameraInterfacePtr & renderCamera = m_arrow->getRenderCamera();
-            const RenderViewportInterfacePtr & renderViewport = m_arrow->getRenderViewport();
+            RenderInterface * render = m_arrow->getRender();
+
+            const RenderCameraInterfacePtr & renderCamera = render->getRenderCamera();
+            const RenderViewportInterfacePtr & renderViewport = render->getRenderViewport();
 
             mt::vec2f wp;
-            m_arrow->calcMouseWorldPosition( renderCamera, renderViewport, _position, wp );
+            m_arrow->calcMouseWorldPosition( renderCamera, renderViewport, _position, &wp );
 
             mt::vec3f v3( wp.x, wp.y, 0.f );
 
@@ -54,6 +57,10 @@ namespace Mengine
         , m_pointClick( 0.f, 0.f )
         , m_radius( 0.f )
         , m_hided( false )
+    {
+    }
+    //////////////////////////////////////////////////////////////////////////
+    Arrow::~Arrow()
     {
     }
     //////////////////////////////////////////////////////////////////////////
@@ -82,7 +89,7 @@ namespace Mengine
         }
 
         m_inputMousePositionProviderId = INPUT_SERVICE()
-            ->addMousePositionProvider( new ArrowInputMousePositionProvider( this ) );
+            ->addMousePositionProvider( Helper::makeFactorableUnique<ArrowInputMousePositionProvider>( this ) );
 
         const mt::vec2f & cursor_pos = INPUT_SERVICE()
             ->getCursorPosition( 0 );
@@ -93,7 +100,7 @@ namespace Mengine
         if( renderCamera != nullptr && renderViewport != nullptr )
         {
             mt::vec2f wp;
-            this->calcMouseWorldPosition( renderCamera, renderViewport, cursor_pos, wp );
+            this->calcMouseWorldPosition( renderCamera, renderViewport, cursor_pos, &wp );
 
             mt::vec3f pos;
             pos.x = wp.x;
@@ -123,6 +130,13 @@ namespace Mengine
         Entity::_deactivate();
     }
     //////////////////////////////////////////////////////////////////////////
+    void Arrow::render( const RenderContext * _context ) const
+    {
+        MENGINE_UNUSED( _context );
+
+        //Empty
+    }
+    //////////////////////////////////////////////////////////////////////////
     void Arrow::setPolygon( const Polygon & _polygon )
     {
         m_arrowType = EAT_POLYGON;
@@ -149,27 +163,21 @@ namespace Mengine
     //////////////////////////////////////////////////////////////////////////
     void Arrow::onAppMouseLeave()
     {
-        Node::setHide( true );
+        BaseRender::setHide( true );
     }
     //////////////////////////////////////////////////////////////////////////
     void Arrow::onAppMouseEnter()
     {
         if( m_hided == false )
         {
-            Node::setHide( false );
+            BaseRender::setHide( false );
         }
     }
     //////////////////////////////////////////////////////////////////////////
-    void Arrow::setHide( bool _value )
-    {
-        Node::setHide( _value );
-        m_hided = _value;
-    }
-    //////////////////////////////////////////////////////////////////////////
-    void Arrow::calcMouseWorldPosition( const RenderCameraInterfacePtr & _camera, const RenderViewportInterfacePtr & _viewport, const mt::vec2f & _screenPoint, mt::vec2f & _worldPoint ) const
+    void Arrow::calcMouseWorldPosition( const RenderCameraInterfacePtr & _camera, const RenderViewportInterfacePtr & _viewport, const mt::vec2f & _screenPoint, mt::vec2f * _worldPoint ) const
     {
         mt::vec2f adaptScreenPoint;
-        this->adaptScreenPosition_( _screenPoint, adaptScreenPoint );
+        this->adaptScreenPosition_( _screenPoint, &adaptScreenPoint );
 
         const Viewport & viewport = _viewport->getViewport();
 
@@ -203,16 +211,16 @@ namespace Mengine
         mt::vec2f p_vm;
         mt::mul_v2_v2_m4( p_vm, p, vm_inv );
 
-        _worldPoint = p_vm;
+        *_worldPoint = p_vm;
     }
     //////////////////////////////////////////////////////////////////////////
-    void Arrow::calcPointClick( const RenderCameraInterfacePtr & _camera, const RenderViewportInterfacePtr & _viewport, const mt::vec2f & _screenPoint, mt::vec2f & _worldPoint ) const
+    void Arrow::calcPointClick( const RenderCameraInterfacePtr & _camera, const RenderViewportInterfacePtr & _viewport, const mt::vec2f & _screenPoint, mt::vec2f * _worldPoint ) const
     {
-        (void)_viewport;
-        (void)_camera;
+        MENGINE_UNUSED( _viewport );
+        MENGINE_UNUSED( _camera );
 
         mt::vec2f p1;
-        this->calcMouseWorldPosition( _camera, _viewport, _screenPoint, p1 );
+        this->calcMouseWorldPosition( _camera, _viewport, _screenPoint, &p1 );
 
         EArrowType arrowType = this->getArrowType();
 
@@ -224,29 +232,35 @@ namespace Mengine
 
                 mt::vec2f p = p1 + pc;
 
-                _worldPoint = p;
+                *_worldPoint = p;
             }break;
         case EAT_RADIUS:
             {
                 mt::vec2f p = p1;
 
-                _worldPoint = p;
+                *_worldPoint = p;
             }break;
         case EAT_POLYGON:
             {
                 mt::vec2f p = p1;
 
-                _worldPoint = p;
+                *_worldPoint = p;
+            }break;
+        default:
+            {
+                MENGINE_ASSERTION_FATAL( false, "arrow type '%d'"
+                    , arrowType
+                );
             }break;
         }
     }
     //////////////////////////////////////////////////////////////////////////
-    void Arrow::calcPointDeltha( const RenderCameraInterfacePtr & _camera, const mt::vec2f & _screenPoint, const mt::vec2f & _screenDeltha, mt::vec2f & _worldDeltha ) const
+    void Arrow::calcPointDeltha( const RenderCameraInterfacePtr & _camera, const mt::vec2f & _screenDeltha, mt::vec2f * _worldDeltha ) const
     {
-        Helper::screenToWorldDelta( _camera, _screenPoint, _screenDeltha, _worldDeltha );
+        Helper::screenToWorldDelta( _camera, _screenDeltha, _worldDeltha );
     }
     //////////////////////////////////////////////////////////////////////////
-    void Arrow::calcMouseScreenPosition( const RenderCameraInterfacePtr & _camera, const RenderViewportInterfacePtr & _viewport, const mt::vec2f & _worldPoint, mt::vec2f & _screenPoint ) const
+    void Arrow::calcMouseScreenPosition( const RenderCameraInterfacePtr & _camera, const RenderViewportInterfacePtr & _viewport, const mt::vec2f & _worldPoint, mt::vec2f * _screenPoint ) const
     {
         const mt::mat4f & vm = _camera->getCameraViewMatrix();
 
@@ -283,12 +297,12 @@ namespace Mengine
         mt::vec2f sp = vp_begin + p_screen * vp_size;
 
         mt::vec2f adapt_sp;
-        this->adaptWorldPosition_( sp, adapt_sp );
+        this->adaptWorldPosition_( sp, &adapt_sp );
 
-        _screenPoint = adapt_sp;
+        *_screenPoint = adapt_sp;
     }
     //////////////////////////////////////////////////////////////////////////
-    void Arrow::adaptScreenPosition_( const mt::vec2f & _screenPoint, mt::vec2f & _adaptScreenPoint ) const
+    void Arrow::adaptScreenPosition_( const mt::vec2f & _screenPoint, mt::vec2f * _adaptScreenPoint ) const
     {
         const Viewport & renderViewport = APPLICATION_SERVICE()
             ->getRenderViewport();
@@ -305,10 +319,10 @@ namespace Mengine
         mt::vec2f windowScale = renderViewportSize / currentResolutionSize;
         mt::vec2f windowOffset = renderViewport.begin / currentResolutionSize;
 
-        _adaptScreenPoint = (_screenPoint - windowOffset) / windowScale;
+        *_adaptScreenPoint = (_screenPoint - windowOffset) / windowScale;
     }
     //////////////////////////////////////////////////////////////////////////
-    void Arrow::adaptScreenDeltha_( const mt::vec2f & _screenDeltha, mt::vec2f & _adaptScreenDeltha ) const
+    void Arrow::adaptScreenDeltha_( const mt::vec2f & _screenDeltha, mt::vec2f * _adaptScreenDeltha ) const
     {
         const Viewport & renderViewport = APPLICATION_SERVICE()
             ->getRenderViewport();
@@ -324,10 +338,10 @@ namespace Mengine
 
         mt::vec2f windowScale = renderViewportSize / currentResolutionSize;
 
-        _adaptScreenDeltha = _screenDeltha / windowScale;
+        *_adaptScreenDeltha = _screenDeltha / windowScale;
     }
     //////////////////////////////////////////////////////////////////////////
-    void Arrow::adaptWorldPosition_( const mt::vec2f & _screenPoint, mt::vec2f & _adaptScreenPoint ) const
+    void Arrow::adaptWorldPosition_( const mt::vec2f & _screenPoint, mt::vec2f * _adaptScreenPoint ) const
     {
         const Viewport & renderViewport = APPLICATION_SERVICE()
             ->getRenderViewport();
@@ -344,163 +358,6 @@ namespace Mengine
         mt::vec2f windowScale = renderViewportSize / currentResolutionSize;
         mt::vec2f windowOffset = renderViewport.begin / currentResolutionSize;
 
-        _adaptScreenPoint = _screenPoint * windowScale + windowOffset;
-    }
-    //////////////////////////////////////////////////////////////////////////
-    void Arrow::_debugRender( RenderServiceInterface * _renderService, const RenderContext * _state )
-    {
-        if( (_state->debugMask & MENGINE_DEBUG_HOTSPOTS) == 0 )
-        {
-            return;
-        }
-
-        EArrowType arrowType = this->getArrowType();
-
-        switch( arrowType )
-        {
-        case EAT_POINT:
-            {
-                return;
-            }break;
-        case EAT_RADIUS:
-            {
-                uint32_t numpoints = 4;
-                uint32_t vertexCount = numpoints * 2;
-
-                RenderVertex2D * vertices = _renderService
-                    ->getDebugRenderVertex2D( vertexCount );
-
-                if( vertices == nullptr )
-                {
-                    return;
-                }
-
-                const mt::mat4f & worldMat = this->getWorldMatrix();
-
-                mt::vec2f ring[4];
-
-                float radius = this->getRadius();
-                float half_radius = radius * 0.5f;
-                ring[0] = mt::vec2f( 0, -half_radius );
-                ring[1] = mt::vec2f( half_radius, 0 );
-                ring[2] = mt::vec2f( 0, half_radius );
-                ring[3] = mt::vec2f( -half_radius, 0 );
-
-                for( uint32_t i = 0; i != numpoints; ++i )
-                {
-                    uint32_t j = (i + 1) % numpoints;
-
-                    mt::vec3f trP0;
-                    mt::mul_v3_v2_m4( trP0, ring[i], worldMat );
-
-                    RenderVertex2D & v0 = vertices[i * 2 + 0];
-
-                    v0.position = trP0;
-
-                    v0.color = 0x8080FFFF;
-
-                    for( uint32_t uv_index = 0; uv_index != MENGINE_RENDER_VERTEX_UV_COUNT; ++uv_index )
-                    {
-                        v0.uv[uv_index].x = 0.f;
-                        v0.uv[uv_index].y = 0.f;
-                    }
-
-                    mt::vec3f trP1;
-                    mt::mul_v3_v2_m4( trP1, ring[j], worldMat );
-
-                    RenderVertex2D & v1 = vertices[i * 2 + 1];
-
-                    v1.position = trP1;
-
-                    v1.color = 0x8080FFFF;
-
-                    for( uint32_t uv_index = 0; uv_index != MENGINE_RENDER_VERTEX_UV_COUNT; ++uv_index )
-                    {
-                        v1.uv[uv_index].x = 0.f;
-                        v1.uv[uv_index].y = 0.f;
-                    }
-                }
-
-                const RenderMaterialInterfacePtr & debugMaterial = RENDERMATERIAL_SERVICE()
-                    ->getDebugMaterial();
-
-                _renderService
-                    ->addRenderLine( _state, debugMaterial
-                        , vertices
-                        , vertexCount
-                        , nullptr
-                        , true
-                    );
-            }break;
-        case EAT_POLYGON:
-            {
-                uint32_t numpoints = m_polygon.num_points();
-
-                if( numpoints == 0 )
-                {
-                    return;
-                }
-
-                uint32_t vertexCount = numpoints * 2;
-
-                RenderVertex2D * vertices = _renderService
-                    ->getDebugRenderVertex2D( vertexCount );
-
-                if( vertices == nullptr )
-                {
-                    return;
-                }
-
-                const mt::mat4f & worldMat = this->getWorldMatrix();
-
-                const mt::vec2f * ring = m_polygon.outer_points();
-
-                for( uint32_t i = 0; i != numpoints; ++i )
-                {
-                    uint32_t j = (i + 1) % numpoints;
-
-                    mt::vec3f trP0;
-                    mt::mul_v3_v2_m4( trP0, ring[i], worldMat );
-
-                    RenderVertex2D & v0 = vertices[i * 2 + 0];
-
-                    v0.position = trP0;
-
-                    v0.color = 0x8080FFFF;
-
-                    for( uint32_t uv_index = 0; uv_index != MENGINE_RENDER_VERTEX_UV_COUNT; ++uv_index )
-                    {
-                        v0.uv[uv_index].x = 0.f;
-                        v0.uv[uv_index].y = 0.f;
-                    }
-
-                    mt::vec3f trP1;
-                    mt::mul_v3_v2_m4( trP1, ring[j], worldMat );
-
-                    RenderVertex2D & v1 = vertices[i * 2 + 1];
-
-                    v1.position = trP1;
-
-                    v1.color = 0x8080FFFF;
-
-                    for( uint32_t uv_index = 0; uv_index != MENGINE_RENDER_VERTEX_UV_COUNT; ++uv_index )
-                    {
-                        v1.uv[uv_index].x = 0.f;
-                        v1.uv[uv_index].y = 0.f;
-                    }
-                }
-
-                const RenderMaterialInterfacePtr & debugMaterial = RENDERMATERIAL_SERVICE()
-                    ->getDebugMaterial();
-
-                _renderService
-                    ->addRenderLine( _state, debugMaterial
-                        , vertices
-                        , (uint32_t)vertexCount
-                        , nullptr
-                        , true
-                    );
-            }break;
-        }
+        *_adaptScreenPoint = _screenPoint * windowScale + windowOffset;
     }
 }

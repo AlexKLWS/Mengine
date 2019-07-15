@@ -14,17 +14,17 @@ namespace Mengine
         ~HotSpotShape() override;
 
     public:
-		void setResourceShape( const ResourceShapePtr & _resourceShape );
-		const ResourceShapePtr & getResourceShape() const;
+        void setResourceShape( const ResourceShapePtr & _resourceShape );
+        const ResourceShapePtr & getResourceShape() const;
 
     protected:
         bool _compile() override;
         void _release() override;
 
     private:
-        ResourceHolder<ResourceShape> m_resourceShape;
+        ResourceShapePtr m_resourceShape;
     };
     //////////////////////////////////////////////////////////////////////////
-    typedef IntrusivePtr<HotSpotShape> HotSpotShapePtr;
+    typedef IntrusivePtr<HotSpotShape, Node> HotSpotShapePtr;
     //////////////////////////////////////////////////////////////////////////
-}	
+}

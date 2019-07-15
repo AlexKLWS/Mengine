@@ -1,24 +1,107 @@
 set( MY_LIB_NAME Kernel )
 
 ADD_FILTER(
-Servant
-    Servant.h
-    Servant.cpp
+Mixin\\\\Unknowable
+	Unknowable.h
 )
 
 ADD_FILTER(
-Eventable
-	Eventable.cpp
+Mixin\\\\Eventable
 	Eventable.h
-	EventReceiver.h
+    BaseEventation.h
+    BaseEventation.cpp
+)
+
+ADD_FILTER(
+Mixin\\\\Scriptable    
+	Scriptable.cpp
+	Scriptable.h
+)
+
+ADD_FILTER(
+Mixin\\\\Animatable
+	Animatable.h
+)
+
+ADD_FILTER(
+Mixin\\\\Soundable
+	Soundable.cpp
+	Soundable.h
+)
+
+ADD_FILTER(
+Mixin\\\\Updatable
+	Updatable.h
+    UpdateContext.h
+)
+
+ADD_FILTER(
+Mixin\\\\Renderable
+	Renderable.h
+    RenderContext.h
+)
+
+ADD_FILTER(
+Mixin\\\\Colorable
+	Colorable.cpp
+	Colorable.h
+)
+
+ADD_FILTER(
+Mixin\\\\Affectorable
+	Affectorable.cpp
+	Affectorable.h
+)
+
+ADD_FILTER(
+Mixin\\\\Materialable
+	Materialable.cpp
+	Materialable.h
+)
+
+ADD_FILTER(
+Mixin\\\\Observable
+	Observable.h
+)
+
+ADD_FILTER(
+Mixin\\\\Pickerable
+    Pickerable.h
+)
+
+ADD_FILTER(
+BaseUpdation    
+    BaseUpdation.cpp
+    BaseUpdation.h
+)
+
+ADD_FILTER(
+BasePicker
+    BasePicker.cpp
+    BasePicker.h
+	DummyPicker.cpp
+    DummyPicker.h
+)
+
+ADD_FILTER(
+BaseRender
+	BaseRender.cpp
+	BaseRender.h
+    DummyRender.cpp
+    DummyRender.h
 )
 
 ADD_FILTER(
 Affector
 	Affector.h
 	Affector.cpp
+    BaseAffector.h
+    BaseAffector.cpp
+    LambdaAffector.h
+    LambdaAffectorInterpolate.h
+    LambdaAffectorAccumulateLinear.h
+    AffectorCallbackInterface.h
     AffectorHelper.h
-    AffectorHelper.cpp
 	AffectorType.h
     AffectorType.cpp
 )
@@ -32,7 +115,13 @@ Shape
 ADD_FILTER(
 Node
 	Node.cpp
-	Node.h    
+	Node.h  
+    NodeRenderHierarchy.cpp
+    NodeRenderHierarchy.h
+    NodePickerHierarchy.cpp
+    NodePickerHierarchy.h
+    NodeUniqueFinder.cpp
+    NodeUniqueFinder.h
 )
 
 ADD_FILTER(
@@ -66,9 +155,17 @@ Layer
 )
 
 ADD_FILTER(
+Interender
+    Interender.cpp
+    Interender.h
+)
+
+ADD_FILTER(
 PrototypeGenerator
     BasePrototypeGenerator.cpp
     BasePrototypeGenerator.h    
+	FactoryPrototypeGenerator.cpp
+	FactoryPrototypeGenerator.h
     DefaultPrototypeGenerator.h
     NodePrototypeGenerator.h
     ScriptablePrototypeGenerator.h
@@ -89,68 +186,16 @@ Identity
 )
 
 ADD_FILTER(
-Scriptable
-	Scriptable.cpp
-	Scriptable.h
+Transformation
+	Transformation.cpp
+	Transformation.h
 )
 
 ADD_FILTER(
-Animatable
-	Animatable.cpp
-	Animatable.h
-)
-
-ADD_FILTER(
-Soundable
-	Soundable.cpp
-	Soundable.h
-)
-
-ADD_FILTER(
-Comable
-    Comable.h
-)
-
-ADD_FILTER(
-Updatable
-	Updatable.cpp
-	Updatable.h
-)
-
-ADD_FILTER(
-Renderable
-	Renderable.cpp
-	Renderable.h
-)
-
-ADD_FILTER(
-Transformation3D
-	Transformation3D.cpp
-	Transformation3D.h
-)
-
-ADD_FILTER(
-Colorable
-	Colorable.cpp
-	Colorable.h
-)
-
-ADD_FILTER(
-Affectorable
-	Affectorable.cpp
-	Affectorable.h
-)
-
-ADD_FILTER(
-Materialable
-	Materialable.cpp
-	Materialable.h
-)
-
-ADD_FILTER(
-Parallax
-	Parallax.cpp
-	Parallax.h
+Animation
+    AnimationEventReceiver.h
+	BaseAnimation.h
+    BaseAnimation.cpp
 )
 
 ADD_FILTER(
@@ -196,7 +241,6 @@ Resource
 	Compilable.cpp
 	Compilable.h
     ResourceCacher.h
-    ResourceHolder.h        
     Resource.cpp
     Resource.h
 )
@@ -205,16 +249,14 @@ ADD_FILTER(
 Resource\\\\Image
 	ResourceImage.cpp
 	ResourceImage.h
-	ResourceImageData.cpp
-	ResourceImageData.h
 )
 
 ADD_FILTER(
-Resource\\\\Music
-    ResourceMusic.cpp
-    ResourceMusic.h
+Resource\\\\Content
+    Contentable.h
+	Content.cpp
+	Content.h
 )
-
 
 ADD_FILTER(
 Vertices
@@ -225,6 +267,7 @@ Vertices
 
 ADD_FILTER(
 ThreadTask
+    ThreadEnum.h
 	ThreadTask.h
 	ThreadTask.cpp
     ThreadJob.h
@@ -234,26 +277,16 @@ ThreadTask
 )
 
 ADD_FILTER(
-Loadable
-	Loadable.h
-	Loadable.cpp
-)
-
-ADD_FILTER(
 Visitable
 	Visitable.h
 )
 
 ADD_FILTER(
-ScheduleManager
-	ScheduleManager.cpp
-	ScheduleManager.h
-)
-
-ADD_FILTER(
-ScriptWrapper
-	ScriptWrapper.h
-	ScriptEventReceiver.h	
+Scheduler
+    SchedulerHelper.cpp
+    SchedulerHelper.h
+	Scheduler.cpp
+	Scheduler.h
 )
 
 ADD_FILTER(
@@ -263,18 +296,263 @@ Randomizer
 )
 
 ADD_FILTER(
-Observable
-	Observable.h
+Core
+    Assertion.h
+    Assertion.cpp
+    AssertionFactory.h
+    AssertionFactory.cpp	
+	AssertionNotImplemented.h
+    AssertionResourceType.h
+    AssertionMemoryPanic.h
+    AssertionMainThreadGuard.h
+    AssertionVocabulary.h
+    AssertionVocabulary.cpp
+    
+    Pool.h
+
+    CRC32.h
+    CRC32.cpp
+	
+    ServantBase.h
+	ServiceBase.h    
+	
+	FontBase.h
+	FontBase.cpp
+    
+    Exception.h
+    Visitor.h
+    
+    Polygon.h
+    Polygon.cpp
+    PolygonHelper.h
+    PolygonHelper.cpp
+    
+    Geolygon.h
+    Geolygon.cpp
+    
+	Viewport.h
+	Viewport.cpp
+	
+	Resolution.h
+	Resolution.cpp	
+
+	Color.h
+	Color.cpp
+        
+    GlyphCode.h
+    
+    IniUtil.h
+    IniUtil.cpp
+    
+    HashType.h
+   
+    PathString.h
+   
+    FilePath.h
+    FilePath.cpp
+    FilePathHelper.h
+    FilePathHelper.cpp
+    
+    FileLogger.cpp
+    FileLogger.h
+    
+    PixelFormat.h
+    PixelFormat.cpp
+    
+    MemoryAllocator.h
+    
+    MemoryHelper.h
+    MemoryHelper.cpp
+	
+    ValueInterpolator.h
+    ValueFollower.h
+    ValueFollowerLinear.h
+    ValueFollowerAcceleration.h
+    
+    String.h
+	String.cpp
+    
+    Tags.h
+    Tags.cpp
+    
+    TagsHelper.h
+    TagsHelper.cpp
+    
+    StringFormat.h
+	StringFormat.cpp
+    
+    Params.h
+    
+	Rect.h
+	Rect.cpp
+    
+    Stream.h
+    Stream.cpp
+    
+    Pointer.h
+	
+    ConstString.h
+    ConstString.cpp
+	ConstStringHolder.h
+    ConstStringHolder.cpp
+	ConstStringHolderLocalString.h
+	ConstStringHolderLocalString.cpp
+	VectorConstString.h
+    
+    VectorResourceImages.h
+    
+    UID.h
+    UID.cpp        
+        
+    RenderUtils.h
+	RenderUtils.cpp
+    
+    OutputStreamWriter.h
+        
+    ThreadMutexDummy.h
+    ThreadMutexDummy.cpp
+    
+    PluginBase.h
+    PluginBase.cpp
+    
+    ModuleBase.h
+    ModuleBase.cpp
+    
+    ModuleFactory.h
+    
+    Holder.h
+    
+    RenderVertex2D.h
+    RenderIndex.h
+    
+    VectorRenderVertex2D.h
+    VectorRenderIndex.h
+   
+    Magic.h    
+    Mixin.h
+    MixinPointer.h
+    Magicable.h
+	
+	Callback.h
+    
+    MixerValue.h
+    MixerValue.cpp
+    
+    Typename.h
+    SHA1.h
+    
+    IntrusivePtr.h
+    IntrusivePtrBase.h
+    
+    IntrusiveSlug.h
+    IntrusiveSlugIterator.h
+    IntrusiveSlugHead.h
+    IntrusiveSlugListSize.h
+    IntrusiveSlugList.h    
+    
+    LoggerBase.cpp
+    LoggerBase.h
+    
+    AspectRatioViewports.h
+	VectorAspectRatioViewports.h
+    
+    Range.h
+    
+    Hashgen.h
+    Hashtable.h
+    HashHelper.h
+    
+    ThreadMutexScope.h
+    ThreadMutexScope.cpp
+    
+    Dataflow.h
+    Dataflow.cpp
+
+    DataPointer.h
+    
+    StringArguments.h
+    StringArguments.cpp
+    
+    GlobalInputHandlerHelper.h
+    GlobalInputHandlerHelper.cpp
+    
+    KeyCode.h
+    Document.h
+    
+    Ravingcode.h
+    Ravingcode.cpp
+    
+    SecureValue.h
+    SecureValue.cpp
 )
-   
-   
-INCLUDE_DIRECTORIES(
-    ${SOURCE_DIR}
-    ${SOURCE_DIR}/Utils
-    ${THIRDPARTY_DIR}/metabuf
-    ${THIRDPARTY_DIR}/libmath/include
-    ${THIRDPARTY_DIR}/pybind/include
-    )     
+
+ADD_FILTER(
+Unknown
+    UnknownResourceImageDataInterface.h
+)
+
+ADD_FILTER(
+Codec
+    Decoder.h
+    Encoder.h
+    PickEncoder.cpp
+    PickEncoder.h
+    PickDecoder.cpp
+    PickDecoder.h
+    VideoDecoder.h
+    VideoDecoder.cpp
+    SoundDecoder.h
+    SoundDecoder.cpp
+    ImageDecoder.h
+    ImageDecoder.cpp
+    ImageDecoderMemory.h
+    ImageDecoderMemory.cpp
+    ImageDecoderArchive.h
+    ImageDecoderArchive.cpp
+    ImageEncoder.cpp
+    ImageEncoder.h        
+
+    DecoderFactory.h
+    EncoderFactory.h    
+    ConverterFactory.h
+)
+
+ADD_FILTER(
+Factory
+    Factorable.h
+    Factorable.cpp
+    FactorablePointer.h
+    FactorableUnique.h
+    FactorablePlugin.h
+	Factory.h
+	Factory.cpp
+    FactoryWithListener.h
+    FactoryWithListener.cpp
+    FactoryWithMutex.h
+    FactoryWithMutex.cpp	
+    FactoryDefault.h    
+    FactoryPool.h
+    FactoryPoolWithListener.h
+)
+
+ADD_FILTER(
+Logger
+	Logger.h
+	Logger.cpp
+)
+
+ADD_FILTER(
+Error
+	Error.h
+	Error.cpp
+)
+
+INCLUDE_DIRECTORIES( ${THIRDPARTY_DIR}/boost )
+INCLUDE_DIRECTORIES( ${THIRDPARTY_DIR}/utf8/source )
+INCLUDE_DIRECTORIES( ${THIRDPARTY_DIR}/tinyini/include )
+INCLUDE_DIRECTORIES( ${THIRDPARTY_DIR}/libmath/include )
+INCLUDE_DIRECTORIES( ${THIRDPARTY_DIR}/pybind/include )
+INCLUDE_DIRECTORIES( ${THIRDPARTY_DIR}/stdex/include )
 
 ADD_MENGINE_LIBRARY()
 

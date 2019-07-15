@@ -2,166 +2,190 @@
 
 #include "Interface/ApplicationInterface.h"
 
-#include "Logger/Logger.h"
+#include "Kernel/Logger.h"
 
 namespace Mengine
 {
-	//////////////////////////////////////////////////////////////////////////
-	RenderCameraOrthogonal::RenderCameraOrthogonal()
-		: m_cameraPosition(0.f, 0.f, 0.f)
-		, m_cameraDirection(0.f, 0.f, 1.f)
-		, m_cameraUp(0.f, 1.f, 0.f)
-		, m_cameraRightSign(1.f)
-		, m_cameraNear( -10000.f )
-		, m_cameraFar( 10000.f )
-		, m_proxyViewMatrix( false )
-		, m_fixedOrthogonalViewport( false )
-	{
-	}
+    //////////////////////////////////////////////////////////////////////////
+    RenderCameraOrthogonal::RenderCameraOrthogonal()
+        : m_cameraPosition( 0.f, 0.f, 0.f )
+        , m_cameraDirection( 0.f, 0.f, 1.f )
+        , m_cameraUp( 0.f, 1.f, 0.f )
+        , m_cameraRightSign( 1.f )
+        , m_cameraNear( -10000.f )
+        , m_cameraFar( 10000.f )
+        , m_proxyViewMatrix( false )
+        , m_fixedOrthogonalViewport( false )
+    {
+    }
     //////////////////////////////////////////////////////////////////////////
     RenderCameraOrthogonal::~RenderCameraOrthogonal()
     {
     }
-	//////////////////////////////////////////////////////////////////////////
-	void RenderCameraOrthogonal::setCameraPosition( const mt::vec3f & _pos )
-	{
-		m_cameraPosition = _pos;
+    //////////////////////////////////////////////////////////////////////////
+    void RenderCameraOrthogonal::fromWorldToScreenPosition( const mt::mat4f & _worldMatrix, mt::vec2f & _screenPosition ) const
+    {
+        const mt::mat4f & vpm = this->getCameraViewProjectionMatrix();
 
-		this->invalidateViewMatrix_();
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void RenderCameraOrthogonal::setCameraDirection( const mt::vec3f & _dir )
-	{
-		m_cameraDirection = _dir;
+        mt::mat4f wvpm;
+        mt::mul_m4_m4( wvpm, _worldMatrix, vpm );
 
-		this->invalidateViewMatrix_();
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void RenderCameraOrthogonal::setCameraUp( const mt::vec3f & _up )
-	{
-		m_cameraUp = _up;
+        mt::vec2f v_clip;
+        mt::mul_v2_v2z_m4_homogenize( v_clip, wvpm );
 
-		this->invalidateViewMatrix_();
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void RenderCameraOrthogonal::setCameraRightSign( float _rightSign )
-	{
-		m_cameraRightSign = _rightSign;
+        mt::vec2f v_wvpn;
+        v_wvpn.x = (1.f + v_clip.x) * 0.5f;
+        v_wvpn.y = (1.f - v_clip.y) * 0.5f;
 
-		this->invalidateViewMatrix_();
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void RenderCameraOrthogonal::setCameraNear( float _near )
-	{
-		m_cameraNear = _near;
+        Viewport vp;
+        this->makeViewport_( vp );
 
-		this->invalidateProjectionMatrix_();
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void RenderCameraOrthogonal::setCameraFar( float _far )
-	{
-		m_cameraFar = _far;
+        mt::vec2f vpSize = (vp.end - vp.begin);
 
-		this->invalidateProjectionMatrix_();
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void RenderCameraOrthogonal::setOrthogonalViewport( const Viewport & _viewport )
-	{
-		m_orthogonalViewport = _viewport;
+        _screenPosition = vp.begin + vpSize * v_wvpn;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void RenderCameraOrthogonal::setCameraPosition( const mt::vec3f & _pos )
+    {
+        m_cameraPosition = _pos;
 
-		this->invalidateProjectionMatrix_();
-	}
-	//////////////////////////////////////////////////////////////////////////
-	const Viewport & RenderCameraOrthogonal::getOrthogonalViewport() const
-	{
-		return m_orthogonalViewport;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void RenderCameraOrthogonal::setFixedOrthogonalViewport( bool _value )
-	{
-		m_fixedOrthogonalViewport = _value;
+        this->invalidateViewMatrix_();
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void RenderCameraOrthogonal::setCameraDirection( const mt::vec3f & _dir )
+    {
+        m_cameraDirection = _dir;
 
-		this->invalidateProjectionMatrix_();
-	}
-	//////////////////////////////////////////////////////////////////////////
-	bool RenderCameraOrthogonal::getFixedOrthogonalViewport() const
-	{
-		return m_fixedOrthogonalViewport;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void RenderCameraOrthogonal::setProxyViewMatrix( bool _value )
-	{
-		m_proxyViewMatrix = _value;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	bool RenderCameraOrthogonal::getProxyViewMatrix() const
-	{
-		return m_proxyViewMatrix;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void RenderCameraOrthogonal::_updateViewMatrix() const
-	{
-		const mt::mat4f & wm = this->getWorldMatrix();
+        this->invalidateViewMatrix_();
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void RenderCameraOrthogonal::setCameraUp( const mt::vec3f & _up )
+    {
+        m_cameraUp = _up;
 
-		if( m_proxyViewMatrix == false )
-		{
-			mt::vec3f wm_position;
-			mt::mul_v3_v3_m4( wm_position, m_cameraPosition, wm );
+        this->invalidateViewMatrix_();
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void RenderCameraOrthogonal::setCameraRightSign( float _rightSign )
+    {
+        m_cameraRightSign = _rightSign;
 
-			mt::vec3f wm_direction;
-			mt::mul_v3_v3_m4_r( wm_direction, m_cameraDirection, wm );
+        this->invalidateViewMatrix_();
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void RenderCameraOrthogonal::setCameraNear( float _near )
+    {
+        m_cameraNear = _near;
 
-			mt::vec3f wm_up;
-			mt::mul_v3_v3_m4_r( wm_up, m_cameraUp, wm );
+        this->invalidateProjectionMatrix_();
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void RenderCameraOrthogonal::setCameraFar( float _far )
+    {
+        m_cameraFar = _far;
 
-			RENDER_SERVICE()
-				->makeViewMatrixLookAt( m_viewMatrix, wm_position, wm_direction, wm_up, m_cameraRightSign );
+        this->invalidateProjectionMatrix_();
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void RenderCameraOrthogonal::setOrthogonalViewport( const Viewport & _viewport )
+    {
+        m_orthogonalViewport = _viewport;
 
-			mt::inv_m4_m4( m_viewMatrixInv, m_viewMatrix );
-		}
-		else
-		{
-			mt::inv_m4_m4( m_viewMatrix, wm );
+        this->invalidateProjectionMatrix_();
+    }
+    //////////////////////////////////////////////////////////////////////////
+    const Viewport & RenderCameraOrthogonal::getOrthogonalViewport() const
+    {
+        return m_orthogonalViewport;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void RenderCameraOrthogonal::setFixedOrthogonalViewport( bool _value )
+    {
+        m_fixedOrthogonalViewport = _value;
 
-			m_viewMatrixInv = wm;
-		}
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void RenderCameraOrthogonal::_updateProjectionMatrix() const
-	{
-		Viewport renderViewport;
+        this->invalidateProjectionMatrix_();
+    }
+    //////////////////////////////////////////////////////////////////////////
+    bool RenderCameraOrthogonal::getFixedOrthogonalViewport() const
+    {
+        return m_fixedOrthogonalViewport;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void RenderCameraOrthogonal::setProxyViewMatrix( bool _value )
+    {
+        m_proxyViewMatrix = _value;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    bool RenderCameraOrthogonal::getProxyViewMatrix() const
+    {
+        return m_proxyViewMatrix;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void RenderCameraOrthogonal::_updateViewMatrix() const
+    {
+        const mt::mat4f & wm = this->getWorldMatrix();
 
-		if( m_fixedOrthogonalViewport == false )
-		{
-			float gameViewportAspect;
-			Viewport gameViewport;
+        if( m_proxyViewMatrix == false )
+        {
+            mt::vec3f wm_position;
+            mt::mul_v3_v3_m4( wm_position, m_cameraPosition, wm );
 
-			APPLICATION_SERVICE()
-				->getGameViewport( gameViewportAspect, gameViewport );
+            mt::vec3f wm_direction;
+            mt::mul_v3_v3_m4_r( wm_direction, m_cameraDirection, wm );
 
-			Viewport renderViewportWM;
+            mt::vec3f wm_up;
+            mt::mul_v3_v3_m4_r( wm_up, m_cameraUp, wm );
 
-			const mt::mat4f & wm = this->getWorldMatrix();
+            mt::make_lookat_m4( m_viewMatrix, wm_position, wm_direction, wm_up, m_cameraRightSign );
 
-			mt::mul_v2_v2_m4( renderViewportWM.begin, m_orthogonalViewport.begin, wm );
-			mt::mul_v2_v2_m4( renderViewportWM.end, m_orthogonalViewport.end, wm );
+            mt::inv_m4_m4( m_viewMatrixInv, m_viewMatrix );
+        }
+        else
+        {
+            mt::inv_m4_m4( m_viewMatrix, wm );
 
-			renderViewportWM.clamp( gameViewport );
+            m_viewMatrixInv = wm;
+        }
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void RenderCameraOrthogonal::_updateProjectionMatrix() const
+    {
+        Viewport renderViewport;
+        this->makeViewport_( renderViewport );
 
-			mt::mat4f wm_inv;
-			mt::inv_m4_m4( wm_inv, wm );
+        mt::make_projection_ortho_lh_m4( m_projectionMatrix, renderViewport.begin.x, renderViewport.end.x, renderViewport.begin.y, renderViewport.end.y, m_cameraNear, m_cameraFar );
 
-			mt::mul_v2_v2_m4( renderViewport.begin, renderViewportWM.begin, wm_inv );
-			mt::mul_v2_v2_m4( renderViewport.end, renderViewportWM.end, wm_inv );
-		}
-		else
-		{
-			renderViewport = m_orthogonalViewport;
-		}
+        mt::inv_m4_m4( m_projectionMatrixInv, m_projectionMatrix );
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void RenderCameraOrthogonal::makeViewport_( Viewport & _viewport ) const
+    {
+        if( m_fixedOrthogonalViewport == false )
+        {
+            float gameViewportAspect;
+            Viewport gameViewport;
 
-		RENDER_SERVICE()
-			->makeProjectionOrthogonal( m_projectionMatrix, renderViewport, m_cameraNear, m_cameraFar );
+            APPLICATION_SERVICE()
+                ->getGameViewport( gameViewportAspect, gameViewport );
 
-		mt::inv_m4_m4( m_projectionMatrixInv, m_projectionMatrix );
-	}
+            Viewport renderViewportWM;
+
+            const mt::mat4f & wm = this->getWorldMatrix();
+
+            mt::mul_v2_v2_m4( renderViewportWM.begin, m_orthogonalViewport.begin, wm );
+            mt::mul_v2_v2_m4( renderViewportWM.end, m_orthogonalViewport.end, wm );
+
+            renderViewportWM.clamp( gameViewport );
+
+            mt::mat4f wm_inv;
+            mt::inv_m4_m4( wm_inv, wm );
+
+            mt::mul_v2_v2_m4( _viewport.begin, renderViewportWM.begin, wm_inv );
+            mt::mul_v2_v2_m4( _viewport.end, renderViewportWM.end, wm_inv );
+        }
+        else
+        {
+            _viewport = m_orthogonalViewport;
+        }
+    }
 }

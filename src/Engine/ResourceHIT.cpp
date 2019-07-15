@@ -2,301 +2,198 @@
 
 #include "Interface/PickCodecInterface.h"
 #include "Interface/ConverterInterface.h"
-#include "Interface/ResourceInterface.h"
-#include "Interface/StringizeInterface.h"
+#include "Interface/ResourceServiceInterface.h"
+#include "Interface/StringizeServiceInterface.h"
+#include "Interface/FileServiceInterface.h"
+#include "Interface/CodecServiceInterface.h"
+#include "Interface/MemoryServiceInterface.h"
 
-#include "Metacode/Metacode.h"
-
-#include "Logger/Logger.h"
+#include "Kernel/Logger.h"
+#include "Kernel/Document.h"
+#include "Kernel/AssertionMemoryPanic.h"
 
 #include <math.h>
 
 namespace Mengine
 {
-	//////////////////////////////////////////////////////////////////////////
-	ResourceHIT::ResourceHIT()
-		: m_width(0)
-		, m_height(0)
-        , m_mipmaplevel(0)
-		, m_mipmapsize(0)
-	{
-	}
+    //////////////////////////////////////////////////////////////////////////
+    ResourceHIT::ResourceHIT()
+        : m_width( 0 )
+        , m_height( 0 )
+        , m_mipmaplevel( 0 )
+        , m_mipmapsize( 0 )
+    {
+    }
     //////////////////////////////////////////////////////////////////////////
     ResourceHIT::~ResourceHIT()
     {
     }
     //////////////////////////////////////////////////////////////////////////
-    void ResourceHIT::setFilePath( const FilePath & _filePath )
+    bool ResourceHIT::_compile()
     {
-        m_filePath = _filePath;
-    }
-    //////////////////////////////////////////////////////////////////////////
-    const FilePath & ResourceHIT::getFilePath() const
-    {
-        return m_filePath;
-    }
-    //////////////////////////////////////////////////////////////////////////
-    void ResourceHIT::setCodecType( const ConstString & _codec )
-    {
-        m_codecType = _codec;
-    }
-    //////////////////////////////////////////////////////////////////////////
-    const ConstString & ResourceHIT::getCodecType() const
-    {
-        return m_codecType;
-    }
-	//////////////////////////////////////////////////////////////////////////
-	bool ResourceHIT::_loader( const Metabuf::Metadata * _meta )
-	{
-        const Metacode::Meta_Data::Meta_DataBlock::Meta_ResourceHIT * metadata 
-            = static_cast<const Metacode::Meta_Data::Meta_DataBlock::Meta_ResourceHIT *>(_meta);
-
-        m_filePath = metadata->get_File_Path();
-        metadata->get_File_Converter( &m_converterType );
-        metadata->get_File_Codec( &m_codecType );
-
-        return true;
-	}
-    //////////////////////////////////////////////////////////////////////////
-    bool ResourceHIT::_convert()
-    {
-		bool result = this->convertDefault_( m_converterType, m_filePath, m_filePath, m_codecType );
-
-        return result;
-    }
-	//////////////////////////////////////////////////////////////////////////
-	bool ResourceHIT::_compile()
-	{
-        const FileGroupInterfacePtr & category = this->getCategory();
+        const FileGroupInterfacePtr & fileGroup = this->getFileGroup();
+        const FilePath & filePath = this->getFilePath();
 
         InputStreamInterfacePtr stream = FILE_SERVICE()
-            ->openInputFile( category, m_filePath, false );
+            ->openInputFile( fileGroup, filePath, false, MENGINE_DOCUMENT_FUNCTION );
 
-        if( stream == nullptr )
-        {
-            LOGGER_ERROR("ResourceHIT::_compile: '%s' - hit file '%s' not found"
-                , this->getName().c_str()
-                , this->getFilePath().c_str()
-                );
-
-            return false;
-        }
+        MENGINE_ASSERTION_MEMORY_PANIC( stream, false, "name '%s' - hit file '%s' not found"
+            , this->getName().c_str()
+            , this->getFilePath().c_str()
+        );
 
         PickDecoderInterfacePtr decoder = CODEC_SERVICE()
-            ->createDecoderT<PickDecoderInterfacePtr>( m_codecType );
+            ->createDecoderT<PickDecoderInterfacePtr>( m_codecType, MENGINE_DOCUMENT_FUNCTION );
 
-        if( decoder == nullptr )
+        MENGINE_ASSERTION_MEMORY_PANIC( decoder, false, "name '%s' - hit file '%s' invalid create decoder '%s'"
+            , this->getName().c_str()
+            , this->getFilePath().c_str()
+            , this->getCodecType().c_str()
+        );
+
+        if( decoder->prepareData( stream ) == false )
         {
-            LOGGER_ERROR("ResourceHIT::_compile: '%s' - hit file '%s' invalid create decoder '%s'"
+            LOGGER_ERROR( "name '%s' - hit file '%s' invalid initialize decoder '%s'"
                 , this->getName().c_str()
                 , this->getFilePath().c_str()
                 , this->getCodecType().c_str()
-                );
+            );
 
             return false;
         }
-
-		if( decoder->prepareData( stream ) == false )
-		{
-			LOGGER_ERROR("ResourceHIT::_compile: '%s' - hit file '%s' invalid initialize decoder '%s'"
-				, this->getName().c_str()
-                , this->getFilePath().c_str()
-                , this->getCodecType().c_str()
-				);
-
-			return false;
-		}
 
         const PickCodecDataInfo * dataInfo = decoder->getCodecDataInfo();
 
         m_width = dataInfo->width;
         m_height = dataInfo->height;
         m_mipmaplevel = dataInfo->mipmaplevel;
-        		
-		MemoryBufferInterfacePtr mipmap = MEMORY_SERVICE()
-			->createMemoryBuffer();
 
-		if( mipmap == nullptr )
-		{
-			LOGGER_ERROR("ResourceHIT::_compile: '%s' - hit file '%s' invalid create memory"
-				, this->getName().c_str()
-                , this->getFilePath().c_str()
-				);
+        MemoryBufferInterfacePtr mipmap = MEMORY_SERVICE()
+            ->createMemoryBuffer( MENGINE_DOCUMENT_FUNCTION );
 
-			return false;
-		}
-		
-		size_t mipmapsize = (size_t)dataInfo->mipmapsize;
-		void * buffer = mipmap->newMemory( mipmapsize, __FILE__, __LINE__ );
+        MENGINE_ASSERTION_MEMORY_PANIC( mipmap, false, "name '%s' - hit file '%s' invalid create memory"
+            , this->getName().c_str()
+            , this->getFilePath().c_str()
+        );
 
-		if( buffer == nullptr )
-		{
-			LOGGER_ERROR("ResourceHIT::_compile: '%s' - hit file '%s' invalid new memory '%u'"
-				, this->getName().c_str()
-                , this->getFilePath().c_str()
-				, mipmapsize
-				);
+        size_t mipmapsize = (size_t)dataInfo->mipmapsize;
+        void * buffer = mipmap->newBuffer( mipmapsize, MENGINE_DOCUMENT_FUNCTION );
 
-			return false;
-		}
-        
-		size_t test_mipmapsize = decoder->decode( buffer, mipmapsize );
+        MENGINE_ASSERTION_MEMORY_PANIC( buffer, false, "name '%s' - hit file '%s' invalid new memory '%u'"
+            , this->getName().c_str()
+            , this->getFilePath().c_str()
+            , mipmapsize
+        );
 
-		if( test_mipmapsize != mipmapsize )
+        size_t test_mipmapsize = decoder->decode( buffer, mipmapsize );
+
+        if( test_mipmapsize != mipmapsize )
         {
-            LOGGER_ERROR("ResourceHIT::_compile %s invalid decode hit %s size %d (%d)"
+            LOGGER_ERROR( "name '%s' invalid decode hit '%s' size %d (%d)"
                 , this->getName().c_str()
                 , this->getFilePath().c_str()
                 , (uint32_t)m_mipmapsize
-				, (uint32_t)mipmapsize
-                );
+                , (uint32_t)mipmapsize
+            );
 
-            return false;                
+            return false;
         }
 
-		m_mipmap = mipmap;
-		m_mipmapsize = (uint32_t)mipmapsize;
+        m_mipmap = mipmap;
+        m_mipmapsize = (uint32_t)mipmapsize;
 
-		return true;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void ResourceHIT::_release()
-	{
-		m_mipmap = nullptr;
-	}
+        return true;
+    }
     //////////////////////////////////////////////////////////////////////////
-    bool ResourceHIT::_isValid() const
+    void ResourceHIT::_release()
     {
-        const FileGroupInterfacePtr & category = this->getCategory();
+        m_mipmap = nullptr;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void ResourceHIT::setPath( const FilePath & _filePath )
+    {
+        const FilePath & filePath = this->getFilePath();
 
-        if( category->existFile( m_filePath ) == false )
+        if( filePath == _filePath )
+        {
+            return;
+        }
+
+        this->recompile( [this, _filePath]() { this->setFilePath( _filePath ); } );
+    }
+    //////////////////////////////////////////////////////////////////////////
+    bool ResourceHIT::testPoint( const mt::vec2f & _point, float _minAlpha ) const
+    {
+        float fi = _point.x;
+        float fj = _point.y;
+
+        if( fi < 0.f || fj < 0.f )
         {
             return false;
         }
 
-		InputStreamInterfacePtr stream = FILE_SERVICE()
-			->openInputFile( category, m_filePath, false );
+        uint32_t i = (uint32_t)fi;
+        uint32_t j = (uint32_t)fj;
 
-		if( stream == nullptr )
-		{
-			LOGGER_ERROR("ResourceHIT::_isValid %s invalid open file %s:%s"
-				, this->getName().c_str()
-				, this->getCategory()->getName().c_str()
-				, this->getFilePath().c_str()
-				);
+        if( i >= m_width || j >= m_height )
+        {
+            return false;
+        }
 
-			return false;
-		}
+        uint8_t minAlpha = (uint8_t)(_minAlpha * 255.f);
+        uint32_t index = j * m_width + i;
 
-		PickDecoderInterfacePtr decoder = CODEC_SERVICE()
-			->createDecoderT<PickDecoderInterfacePtr>( m_codecType );
+        uint8_t * alphaBuffer = this->getHitBuffer_( 0 );
+        uint8_t alpha = alphaBuffer[index];
 
-		if( decoder == nullptr )
-		{
-			LOGGER_ERROR("ResourceHIT::_isValid %s file %s:%s invalid decoder %s"
-                , this->getName().c_str()
-                , this->getCategory()->getName().c_str()
-                , this->getFilePath().c_str()
-				, this->getCodecType().c_str()
-				);
-
-			return false;
-		}
-
-		if( decoder->prepareData( stream ) == false )
-		{
-			LOGGER_ERROR("ResourceHIT::_isValid %s file %s:%s decoder initialize failed %s"
-                , this->getName().c_str()
-                , this->getCategory()->getName().c_str()
-                , this->getFilePath().c_str()
-                , this->getCodecType().c_str()
-				);
-
-			return false;
-		}
+        if( alpha <= minAlpha )
+        {
+            return false;
+        }
 
         return true;
     }
-	//////////////////////////////////////////////////////////////////////////
-	void ResourceHIT::setPath( const FilePath & _filePath )
-	{
-		m_filePath = _filePath;
-
-        this->recompile();
-	}
-	//////////////////////////////////////////////////////////////////////////
-	bool ResourceHIT::testPoint( const mt::vec2f & _point, float _minAlpha ) const
-	{
-		float fi = _point.x;
-		float fj = _point.y;
-
-		if( fi < 0.f || fj < 0.f )
-		{
-			return false;
-		}
-
-		uint32_t i = (uint32_t)fi;
-		uint32_t j = (uint32_t)fj;
-
-		if( i >= m_width || j >= m_height )
-		{
-			return false;
-		}
-
-		uint8_t minAlpha = (uint8_t)(_minAlpha * 255.0f);
-		uint32_t index = j * m_width + i;
-		
-		uint8_t * alphaBuffer = this->getHitBuffer_( 0 );
-		uint8_t alpha = alphaBuffer[index];
-
-		if( alpha <= minAlpha )
-		{
-			return false;
-		}
-
-		return true;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	bool ResourceHIT::testRadius( const mt::vec2f& _point, float _radius, float _minAlpha ) const
-	{
-		float fi = _point.x;
-		float fj = _point.y;
+    //////////////////////////////////////////////////////////////////////////
+    bool ResourceHIT::testRadius( const mt::vec2f& _point, float _radius, float _minAlpha ) const
+    {
+        float fi = _point.x;
+        float fj = _point.y;
 
         float w = (float)m_width;
         float h = (float)m_height;
-		
-		if( fi < -_radius || fj < -_radius )
-		{
-			return false;
-		}
 
-		if( fi > w + _radius || fj > h + _radius )
-		{
-			return false;
-		}
+        if( fi < -_radius || fj < -_radius )
+        {
+            return false;
+        }
 
-		if( fi < 0.f )
-		{
-			fi = 0.f;
-		}
+        if( fi > w + _radius || fj > h + _radius )
+        {
+            return false;
+        }
 
-		if( fj < 0.f )
-		{
-			fj = 0.f;
-		}
+        if( fi < 0.f )
+        {
+            fi = 0.f;
+        }
 
-		if( fi > w )
-		{
-			fi = w;
-		}
+        if( fj < 0.f )
+        {
+            fj = 0.f;
+        }
 
-		if( fj > h )
-		{
-			fj = h;
-		}
+        if( fi > w )
+        {
+            fi = w;
+        }
 
-		uint32_t i = (uint32_t)fi;
-		uint32_t j = (uint32_t)fj;
+        if( fj > h )
+        {
+            fj = h;
+        }
+
+        uint32_t i = (uint32_t)fi;
+        uint32_t j = (uint32_t)fj;
 
         uint32_t level = (uint32_t)(logf( _radius ) / logf( 2.f ));
 
@@ -305,19 +202,14 @@ namespace Mengine
             level = m_mipmaplevel - 1;
         }
 
-		uint8_t * alphaBuffer = this->getHitBuffer_( level );
+        uint8_t * alphaBuffer = this->getHitBuffer_( level );
 
-        if( alphaBuffer == nullptr )
-        {
-            LOGGER_ERROR("ResourceHIT::testRadius %s hit file %s invalid get level buffer %d:%d"
-                , this->getName().c_str()
-                , this->getFilePath().c_str()
-                , level
-                , m_mipmaplevel
-                );
-
-            return false;
-        }
+        MENGINE_ASSERTION_MEMORY_PANIC( alphaBuffer, false, "'%s' hit file '%s' invalid get level buffer %d:%d"
+            , this->getName().c_str()
+            , this->getFilePath().c_str()
+            , level
+            , m_mipmaplevel
+        );
 
         i >>= level;
         j >>= level;
@@ -334,21 +226,21 @@ namespace Mengine
         {
             --j;
         }
-		
-		uint8_t minAlpha = (uint8_t)(_minAlpha * 255.0f);
-		uint32_t index = i + j * alphaWidth;
-				
-		uint8_t alpha = alphaBuffer[index];
 
-		if( alpha > minAlpha )
-		{
-			return true;
-		}
+        uint8_t minAlpha = (uint8_t)(_minAlpha * 255.f);
+        uint32_t index = i + j * alphaWidth;
 
-		return false;
-	}
+        uint8_t alpha = alphaBuffer[index];
+
+        if( alpha > minAlpha )
+        {
+            return true;
+        }
+
+        return false;
+    }
     //////////////////////////////////////////////////////////////////////////
-	uint8_t * ResourceHIT::getHitBuffer_( uint32_t _level ) const
+    uint8_t * ResourceHIT::getHitBuffer_( uint32_t _level ) const
     {
         uint32_t bufferOffset = 0;
 
@@ -360,37 +252,37 @@ namespace Mengine
 
         if( bufferOffset >= m_mipmapsize )
         {
-            LOGGER_ERROR("ResourceHIT::getHitBuffer_ %s hit file %s invalid get level buffer %d:%d"
+            LOGGER_ERROR( "'%s' hit file '%s' invalid get level buffer %d:%d"
                 , this->getName().c_str()
                 , this->getFilePath().c_str()
                 , _level
                 , m_mipmaplevel
-                );
+            );
 
             return nullptr;
         }
 
-		uint8_t * buffer_memory = m_mipmap->getMemory();
+        uint8_t * buffer_memory = m_mipmap->getBuffer();
 
-		uint8_t * buffer = buffer_memory + bufferOffset;
-        
+        uint8_t * buffer = buffer_memory + bufferOffset;
+
         return buffer;
     }
-	//////////////////////////////////////////////////////////////////////////
-    uint32_t ResourceHIT::getWidth() const
+    //////////////////////////////////////////////////////////////////////////
+    uint32_t ResourceHIT::getImageWidth() const
     {
         return m_width;
     }
     //////////////////////////////////////////////////////////////////////////
-    uint32_t ResourceHIT::getHeight() const
+    uint32_t ResourceHIT::getImageHeight() const
     {
         return m_height;
     }
-	//////////////////////////////////////////////////////////////////////////
-	uint8_t * ResourceHIT::getBuffer() const
+    //////////////////////////////////////////////////////////////////////////
+    Pointer ResourceHIT::getImageBuffer() const
     {
-		uint8_t * buffer = this->getHitBuffer_( 0 );
+        uint8_t * buffer = this->getHitBuffer_( 0 );
 
         return buffer;
     }
-}	
+}

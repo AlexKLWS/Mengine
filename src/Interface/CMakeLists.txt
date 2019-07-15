@@ -2,81 +2,168 @@ set( MY_LIB_NAME Interface )
 
 ADD_FILTER(
 src     
+    Interface.h
     ServiceInterface.h
     ServiceProviderInterface.h
-	ServantInterface.h
 	PluginInterface.h
     ModuleInterface.h
-	ScriptSystemInterface.h
+    ModuleFactoryInterface.h
+    ModuleServiceInterface.h
+    ScriptModuleInterface.h
+    ScriptCodeDataInterface.h
+    ScriptEmbeddingInterface.h
+    ScriptProviderServiceInterface.h
+	ScriptServiceInterface.h
 	CodecInterface.h
-    ConfigInterface.h
+	CodecFactoryInterface.h
+	DecoderInterface.h
+	DecoderFactoryInterface.h
+	EncoderInterface.h
+	EncoderFactoryInterface.h
+	CodecServiceInterface.h	
+    ConfigServiceInterface.h
     DataInterface.h
+	DataflowInterface.h
+	DataServiceInterface.h
     MemoryInterface.h
-    PlatformInterface.h
-	XmlCodecInterface.h
+	MemoryServiceInterface.h
+    PlatformInterface.h	
 	ImageCodecInterface.h
     PickCodecInterface.h
 	SoundCodecInterface.h
-	VideoCodecInterface.h
-	ParticleSystemInterface.h
-	FileSystemInterface.h
-    RenderEnumInterface.h
-	RenderSystemInterface.h
-	PhysicSystemInterface.h
-    TextInterface.h
-	StreamInterface.h
+    TextFontInterface.h
+	TextEntryInterface.h
+    TextServiceInterface.h
+	InputStreamInterface.h
+	OutputStreamInterface.h
 	LoggerInterface.h
+	LoggerServiceInterface.h
 	ApplicationInterface.h
-	InputSystemInterface.h
-	SoundSystemInterface.h
-	ThreadInterface.h
-	ThreadSystemInterface.h
-	HttpSystemInterface.h
+	InputServiceInterface.h
+    InputHandlerInterface.h
+    EasingInterface.h
+    EasingServiceInterface.h
+    BootstrapperInterface.h
+
 	ConverterInterface.h
-	StringizeInterface.h
-    GameInterface.h
-    NodeInterface.h
-    PlayerInterface.h
-    ScheduleManagerInterface.h
-    MousePickerSystemInterface.h
-    MovieKeyFrameInterface.h
-    PlayerInterface.h
-    GameInterface.h    
-    PrototypeManagerInterface.h
+	ConverterFactoryInterface.h
+	ConverterServiceInterface.h
+	StringizeServiceInterface.h
+    GameServiceInterface.h
+    PlayerServiceInterface.h
+    SchedulerInterface.h
+    PickerInterface.h
+    PickerServiceInterface.h
+    PrototypeGeneratorInterface.h
+    PrototypeServiceInterface.h
+    VocabularyServiceInterface.h
     WatchdogInterface.h
-    WindowsLayerInterface.h
-    ArchiveInterface.h
-    ProfilerInterface.h
-    Model3DInterface.h
-    PrefetcherInterface.h
+    ArchivatorInterface.h
+    ArchiveServiceInterface.h
+    PrefetcherObserverInterface.h
+    PrefetcherServiceInterface.h
     AmplifierInterface.h
-    GraveyardInterface.h
-    GlobalHandleSystemInterface.h
+    GraveyardServiceInterface.h
+    GlobalInputHandlerInterface.h
     NotificationServiceInterface.h
-    SDLLayerInterface.h
-    TimerInterface.h
+	TimeSystemInterface.h
     PackageInterface.h
-    UserdataInterface.h    
-    OptionsInterface.h
-    TimelineInterface.h
+	PackageServiceInterface.h
+    UserdataServiceInterface.h
+    OptionsServiceInterface.h
+    TimelineServiceInterface.h
     SocketInterface.h
-    COMInterface.h
-    COMMengineInterface.h
-	FactoryInterface.h
-    ResourceInterface.h
-    UnicodeInterface.h
-    NotificatorInterface.h
+	SocketSystemInterface.h
+	FactoryServiceInterface.h
+    ResourceServiceInterface.h
+    UnicodeSystemInterface.h
+    NotificatorInterface.h    
+	LoadableInterface.h
     LoaderInterface.h
+	LoaderServiceInterface.h
     RandomizerInterface.h
+    AnimationInterface.h
+    AccountInterface.h
+	AccountProviderInterface.h
+	AccountServiceInterface.h
+    EventationInterface.h
+    UnknownInterface.h    
+    RenderProgramVariableInterface.h
+    RenderServiceInterface.h
+    RenderInterface.h
+    UpdateServiceInterface.h
+    UpdationInterface.h
+    ServantInterface.h
+    EnumeratorServiceInterface.h
+    SceneServiceInterface.h
+    ChronometerServiceInterface.h
+    ArgumentsInterface.h
+    FrameworkInterface.h
+    PluginServiceInterface.h
+    DynamicLibraryInterface.h
+    ScriptWrapperInterface.h
     
 	dummy.cpp
 )
-INCLUDE_DIRECTORIES( ${Mengine_SOURCE_DIR}/Utils )
 
+ADD_FILTER(
+Sound
+    SoundSystemInterface.h
+    SoundSourceInterface.h
+    SoundServiceInterface.h
+    SoundIdentityInterface.h
+    SoundBufferInterface.h
+    SoundVolumeProviderInterface.h
+)
+
+ADD_FILTER(
+File
+    FileServiceInterface.h
+	FileInputStreamInterface.h
+	FileMappedStreamInterface.h
+	FileOutputStreamInterface.h
+	FileGroupInterface.h
+)   
+
+ADD_FILTER(
+Thread     
+	ThreadIdentityInterface.h
+	ThreadQueueInterface.h
+    ThreadTaskInterface.h
+    ThreadMutexInterface.h
+    ThreadServiceInterface.h
+	ThreadSystemInterface.h
+)
+
+ADD_FILTER(
+Render     
+    MaterialEnumInterface.h
+    RenderEnumInterface.h
+	RenderSystemInterface.h
+	RenderImageInterface.h
+	RenderTextureInterface.h
+	RenderViewportInterface.h	
+	RenderCameraInterface.h
+    RenderTransformationInterface.h
+	RenderScissorInterface.h
+	RenderTargetInterface.h
+	RenderMaterialServiceInterface.h
+	RenderTextureServiceInterface.h
+	RenderIndexBufferInterface.h
+	RenderVertexBufferInterface.h
+	RenderProgramInterface.h
+	RenderVertexShaderInterface.h
+	RenderFragmentShaderInterface.h
+	RenderVertexAttributeInterface.h
+	RenderMaterialInterface.h   
+)
+
+ADD_FILTER(
+dummy     
+	dummy.cpp
+)
 
 ADD_LIBRARY( ${MY_LIB_NAME} ${SRC_FILES} )
-
-TARGET_LINK_LIBRARIES(${MY_LIB_NAME} Core)
 
 SET( APPLICATION_DEPENDENCIES
  ${APPLICATION_DEPENDENCIES}

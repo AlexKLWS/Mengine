@@ -1,10 +1,9 @@
 #include "TextLine.h"
 
-#include "Interface/RenderSystemInterface.h"
+#include "Kernel/Logger.h"
 
-#include "Logger/Logger.h"
+#include "utf8.h"
 
-#include <utf8.h>
 #include <math.h>
 
 namespace Mengine
@@ -14,8 +13,6 @@ namespace Mengine
         : m_layout( _layout )
         , m_length( 0.f )
         , m_charOffset( _charOffset )
-        , m_offset( 0.f )
-        , m_invalidateTextLine( true )
     {
     }
     //////////////////////////////////////////////////////////////////////////
@@ -46,11 +43,11 @@ namespace Mengine
             Glyph glyph;
             if( _font->getGlyph( m_layout, glyphChar, glyphCharNext, &glyph ) == false )
             {
-                LOGGER_ERROR("TextLine for fontName %s invalid glyph %u next %u"
+                LOGGER_ERROR( "fontName '%s' invalid glyph %u next %u"
                     , _font->getName().c_str()
                     , glyphChar
                     , glyphCharNext
-                    );
+                );
 
                 mt::uv4_from_mask( glyph.uv, mt::vec4f( 0.f, 0.f, 0.f, 0.f ) );
                 glyph.offset = mt::vec2f( 0.f, 0.f );
@@ -63,7 +60,7 @@ namespace Mengine
             }
 
             CharData charData;
-            charData.code = glyphChar;            
+            charData.code = glyphChar;
             charData.advance = glyph.advance;
             charData.offset = glyph.offset;
             charData.size = glyph.size;
@@ -83,7 +80,7 @@ namespace Mengine
     //////////////////////////////////////////////////////////////////////////
     uint32_t TextLine::getCharsDataSize() const
     {
-        TVectorCharData::size_type charsDataSize = m_charsData.size();
+        VectorCharData::size_type charsDataSize = m_charsData.size();
 
         return (uint32_t)charsDataSize;
     }
@@ -93,7 +90,7 @@ namespace Mengine
         return m_length;
     }
     //////////////////////////////////////////////////////////////////////////
-    const TVectorCharData & TextLine::getCharsData() const
+    const VectorCharData & TextLine::getCharsData() const
     {
         return m_charsData;
     }

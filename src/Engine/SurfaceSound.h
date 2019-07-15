@@ -1,13 +1,16 @@
 #pragma once
 
 #include "Kernel/Surface.h"
-#include "Kernel/Eventable.h"
-#include "Kernel/Animatable.h"
 #include "Kernel/Soundable.h"
 
-#include "ResourceSound.h"
+#include "Kernel/BaseEventation.h"
+#include "Kernel/AnimationEventReceiver.h"
+#include "Kernel/BaseAnimation.h"
 
-#include "Interface/SoundSystemInterface.h"
+#include "Engine/ResourceSound.h"
+
+#include "Interface/SoundBufferInterface.h"
+#include "Interface/SoundIdentityInterface.h"
 
 namespace Mengine
 {
@@ -17,26 +20,32 @@ namespace Mengine
     };
     //////////////////////////////////////////////////////////////////////////
     class SurfaceSoundEventReceiver
-        : public AnimatableEventReceiver
+        : public AnimationEventReceiver
     {
     public:
     };
     //////////////////////////////////////////////////////////////////////////
     class SurfaceSound
-		: public Surface        
-        , public Eventable
-        , public Animatable		
-		, public Soundable
-	{
-        EVENT_RECEIVER( SurfaceSoundEventReceiver );
+        : public Surface
+        , public Soundable
+        , public BaseEventation
+        , public BaseAnimation
+        , public SoundListenerInterface
+    {
+        DECLARE_ANIMATABLE();
+        DECLARE_EVENTABLE( SurfaceSoundEventReceiver );
 
-	public:
-		SurfaceSound();
-		~SurfaceSound() override;
+    public:
+        SurfaceSound();
+        ~SurfaceSound() override;
 
-	public:
-		void setResourceSound( const ResourceSoundPtr & _resourceSound );
-		const ResourceSoundPtr & getResourceSound() const;
+    public:
+        void setResourceSound( const ResourceSoundPtr & _resourceSound );
+        const ResourceSoundPtr & getResourceSound() const;
+
+    public:
+        void setSoundCategory( ESoundSourceCategory _sourceCategory );
+        ESoundSourceCategory getSoundCategory() const;
 
     public:
         void setInterpolateVolume( bool _interpolateVolume );
@@ -50,55 +59,58 @@ namespace Mengine
         uint32_t getUVCount() const override;
         const mt::uv4f & getUV( uint32_t _index ) const override;
 
-        void correctUV( uint32_t _index, mt::vec2f & _out, const mt::vec2f & _in ) override;
-
-        const ColourValue & getColor() const override;
-
-	protected:
-		bool _play( uint32_t _enumerator, float _time ) override;
-		bool _restart( uint32_t _enumerator, float _time ) override;
-		void _pause( uint32_t _enumerator ) override;
-		void _resume( uint32_t _enumerator, float _time ) override;
-		void _stop( uint32_t _id ) override;
-		void _end( uint32_t _id ) override;
-		bool _interrupt( uint32_t _id ) override;
-		void _setTiming( float _timing ) override;
+        const Color & getColor() const override;
 
     protected:
-		void _setVolume( float _volume ) override;
-		float _getVolume() const override;
-	
-	public:
-		void updateVolume();
+        bool _play( uint32_t _enumerator, float _time ) override;
+        bool _restart( uint32_t _enumerator, float _time ) override;
+        void _pause( uint32_t _enumerator ) override;
+        void _resume( uint32_t _enumerator, float _time ) override;
+        bool _stop( uint32_t _id ) override;
+        void _end( uint32_t _id ) override;
+        bool _interrupt( uint32_t _id ) override;
+        void _setTime( float _time ) override;
+        float _getTime() const override;
 
-		float getDuration() const;
+    protected:
+        void _setVolume( float _volume ) override;
+        float _getVolume() const override;
 
-	protected:
-		bool _compile() override;
-		void _release() override;
+    public:
+        float _getDuration() const override;
 
-	protected:
-        bool _update( float _time, float _timing ) override;
+    protected:
+        bool _compile() override;
+        void _release() override;
 
-	protected:
-		void _setLoop( bool _value ) override;
+    protected:
+        bool update( const UpdateContext * _context ) override;
 
-	protected:
-		RenderMaterialInterfacePtr _updateMaterial() const override;
+    protected:
+        void _setLoop( bool _value ) override;
 
-	private:
-		ResourceHolder<ResourceSound> m_resourceSound;
+    protected:
+        void onSoundPause( const SoundIdentityInterfacePtr & _emitter ) override;
+        void onSoundResume( const SoundIdentityInterfacePtr & _emitter ) override;
+        void onSoundStop( const SoundIdentityInterfacePtr & _emitter ) override;
+        void onSoundEnd( const SoundIdentityInterfacePtr & _emitter ) override;
 
-        SoundBufferInterfacePtr m_soundBuffer;        
+    protected:
+        RenderMaterialInterfacePtr _updateMaterial() const override;
+
+    private:
+        ResourceSoundPtr m_resourceSound;
+
+        SoundBufferInterfacePtr m_soundBuffer;
         SoundIdentityInterfacePtr m_soundEmitter;
 
+        ESoundSourceCategory m_sourceCategory;
+
         bool m_interpolateVolume;
-		bool m_isHeadMode;
+        bool m_isHeadMode;
 
         float m_volume;
-
-        class MySoundListener;
-	};
-	//////////////////////////////////////////////////////////////////////////
-	typedef IntrusivePtr<SurfaceSound> SurfaceSoundPtr;
+    };
+    //////////////////////////////////////////////////////////////////////////
+    typedef IntrusivePtr<SurfaceSound> SurfaceSoundPtr;
 };

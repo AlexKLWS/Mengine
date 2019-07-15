@@ -1,43 +1,44 @@
 #pragma once
 
-#include "Core/RenderVertex2D.h"
+#include "Kernel/VectorRenderVertex2D.h"
 
 #include "Config/Vector.h"
 
 namespace Mengine
 {
-	class VectorVertices
-	{
-	public:
-		VectorVertices();
-        
-	public:
-		inline TVectorRenderVertex2D & getVertices();
-		inline void invalidateVertices( unsigned char _invalidate = 0xFE );
+    class VectorVertices
+    {
+    public:
+        VectorVertices();
+        ~VectorVertices();
 
-	protected:
-		void updateVertices_();
-	
-	protected:
-		virtual void _updateVertices( TVectorRenderVertex2D & _vertices, unsigned char _invalidate ) = 0;
+    public:
+        MENGINE_INLINE VectorRenderVertex2D & getVertices();
+        MENGINE_INLINE void invalidateVertices( uint8_t _invalidate = 0xFE );
 
-	private:
-        TVectorRenderVertex2D m_vertices;
-		unsigned char m_invalidateVertices;
-	};
-	//////////////////////////////////////////////////////////////////////////
-	inline TVectorRenderVertex2D & VectorVertices::getVertices()
-	{
-		if( m_invalidateVertices != 0 )
-		{
-			_updateVertices( m_vertices, m_invalidateVertices );
-		}
+    protected:
+        void updateVertices_();
 
-		return m_vertices;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	inline void VectorVertices::invalidateVertices( unsigned char _invalidate )
-	{
-		m_invalidateVertices |= _invalidate;
-	}
+    protected:
+        virtual void _updateVertices( VectorRenderVertex2D & _vertices, uint8_t _invalidate ) = 0;
+
+    private:
+        VectorRenderVertex2D m_vertices;
+        uint8_t m_invalidateVertices;
+    };
+    //////////////////////////////////////////////////////////////////////////
+    MENGINE_INLINE VectorRenderVertex2D & VectorVertices::getVertices()
+    {
+        if( m_invalidateVertices != 0 )
+        {
+            _updateVertices( m_vertices, m_invalidateVertices );
+        }
+
+        return m_vertices;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    MENGINE_INLINE void VectorVertices::invalidateVertices( uint8_t _invalidate )
+    {
+        m_invalidateVertices |= _invalidate;
+    }
 }

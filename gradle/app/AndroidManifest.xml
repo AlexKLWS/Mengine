@@ -1,19 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest 
     xmlns:android="http://schemas.android.com/apk/res/android" 
-    package="org.Mengine.Build" 
-    android:versionCode="1" 
-    android:versionName="1.0" 
+    package="org.Mengine.Build"
     android:installLocation="auto">
     
+    <!-- OpenGL ES 2.0 -->
+    <uses-feature android:glEsVersion="0x00020000"/>
+    
+    <!-- Touchscreen support -->
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false"/>
+        
+    <uses-permission android:name="android.permission.INTERNET" /> <!--used for http requests-->
+    <uses-permission android:name="android.permission.WAKE_LOCK" /><!--used for http requests (downloading files)-->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/><!--used for Proxy detection, could be disabled-->          
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" /><!-- Allow writing to external storage -->
+
     <application        
         android:label="@string/app_name"
-        android:icon="@mipmap/ic_launcher"        
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:icon="@mipmap/ic_launcher"
         android:allowBackup="true"
         android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
         android:hardwareAccelerated="true">
-        
+        <meta-data android:name="google_analytics_adid_collection_enabled" android:value="false" />
+
         <activity android:name="MengineActivity"
                   android:label="@string/app_name"
                   android:keepScreenOn="true"
@@ -24,14 +35,27 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-    </application>        
-        
-    <uses-sdk android:minSdkVersion="15" android:targetSdkVersion="26"/>
-        
-    <uses-permission android:name="android.permission.INTERNET" /> <!--used for http requests-->    
-    <uses-permission android:name="android.permission.WAKE_LOCK" /><!--used for http requests (downloading files)-->
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/><!--used for Proxy detection, could be disabled-->          
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" /><!-- Allow writing to external storage -->
-    
-    <uses-feature android:glEsVersion="0x00020000"/> 
+
+        <meta-data android:name="com.facebook.sdk.ApplicationId"
+            android:value="@string/facebook_app_id"/>
+
+        <activity android:name="com.facebook.FacebookActivity"
+            android:configChanges=
+                "keyboard|keyboardHidden|screenLayout|screenSize|orientation"
+            android:label="@string/app_name" />
+        <activity
+            android:name="com.facebook.CustomTabActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="@string/fb_login_protocol_scheme" />
+            </intent-filter>
+        </activity>
+
+        <provider android:authorities="com.facebook.app.FacebookContentProvider2127867717489966"
+            android:name="com.facebook.FacebookContentProvider"
+            android:exported="true"/>
+    </application>
 </manifest>

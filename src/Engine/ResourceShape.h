@@ -2,34 +2,31 @@
 
 #include "Kernel/Resource.h"
 
-#include "Core/Polygon.h"
+#include "Kernel/Polygon.h"
 
 namespace Mengine
 {
     class ResourceShape
         : public Resource
     {
-		DECLARE_VISITABLE( Resource );
+        DECLARE_VISITABLE( Resource );
 
     public:
         ResourceShape();
+        ~ResourceShape() override;
 
     public:
+        void setPolygon( const Polygon & _polygon );
         const Polygon & getPolygon() const;
-
-    public:
-        bool _loader( const Metabuf::Metadata * _meta ) override;
 
     protected:
         bool _compile() override;
         void _release() override;
 
     protected:
-        bool _isValid() const override;
-        
-    protected:
         Polygon m_polygon;
     };
-	//////////////////////////////////////////////////////////////////////////
-	typedef IntrusivePtr<ResourceShape> ResourceShapePtr;
-}	
+    //////////////////////////////////////////////////////////////////////////
+    typedef IntrusiveResourcePtr<ResourceShape> ResourceShapePtr;
+    //////////////////////////////////////////////////////////////////////////
+}

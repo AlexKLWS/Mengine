@@ -1,33 +1,39 @@
 #pragma once
 
-#include "Factory/Factorable.h"
+#include "Kernel/Factorable.h"
 
 #include "Kernel/Identity.h"
-#include "Kernel/Servant.h"
 #include "Kernel/Visitable.h"
 #include "Kernel/Scriptable.h"
 #include "Kernel/Materialable.h"
 #include "Kernel/Compilable.h"
+#include "Kernel/Animatable.h"
+#include "Kernel/Eventable.h"
+#include "Kernel/Unknowable.h"
+#include "Kernel/UpdateContext.h"
 
 #include "math/vec2.h"
 #include "math/uv4.h"
-#include "Core/ColourValue.h"
+#include "Kernel/Color.h"
 
 namespace Mengine
 {
-	class Surface
-		: public Servant
+    class Surface
+        : public Factorable
         , public Identity
         , public Visitable
         , public Scriptable
         , public Materialable
         , public Compilable
-	{
+        , public Animatable
+        , public Eventable
+        , public Unknowable
+    {
         DECLARE_VISITABLE_BASE();
 
-	public:
-		Surface();
-		~Surface() override;
+    public:
+        Surface();
+        ~Surface() override;
 
     public:
         virtual const mt::vec2f & getMaxSize() const = 0;
@@ -37,16 +43,26 @@ namespace Mengine
         virtual uint32_t getUVCount() const = 0;
         virtual const mt::uv4f & getUV( uint32_t _index ) const = 0;
 
-        virtual void correctUV( uint32_t _index, mt::vec2f & _out, const mt::vec2f & _in ) = 0;
+        virtual const Color & getColor() const = 0;
 
-        virtual const ColourValue & getColor() const = 0;
-        
     public:
-        bool update( float _current, float _timing );
+        bool initialize();
 
     protected:
-        virtual bool _update( float _current, float _timing ) = 0;
-	};
-	//////////////////////////////////////////////////////////////////////////
-	typedef IntrusivePtr<Surface> SurfacePtr;
+        virtual bool _initialize();
+
+    public:
+        void activate();
+        void deactivate();
+
+    public:
+        virtual bool update( const UpdateContext * _context ) = 0;
+
+    protected:
+        virtual void _activate();
+        virtual void _deactivate();        
+    };
+    //////////////////////////////////////////////////////////////////////////
+    typedef IntrusivePtr<Surface> SurfacePtr;
+    //////////////////////////////////////////////////////////////////////////
 }

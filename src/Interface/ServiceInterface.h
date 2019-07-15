@@ -2,9 +2,9 @@
 
 #include "Interface/ServiceProviderInterface.h"
 
-#include "Factory/Factorable.h"
-
-#include "Core/Typename.h"
+#include "Kernel/Factorable.h"
+#include "Kernel/Assertion.h"
+#include "Kernel/Typename.h"
 
 namespace Mengine
 {
@@ -18,8 +18,12 @@ namespace Mengine
     protected:
         virtual bool initializeService() = 0;
         virtual void finalizeService() = 0;
+
+    public:
         virtual bool isInitializeService() const = 0;
-                
+
+    public:
+        virtual bool isAvailableService() const = 0;
 
     protected:
         virtual void stopService() = 0;
@@ -35,10 +39,10 @@ namespace Mengine
     {
         //////////////////////////////////////////////////////////////////////////
         template<class T>
-        inline T * getService( const Char * _file, uint32_t _line )
+        T * getService( const Char * _file, uint32_t _line )
         {
-            (void)_file;
-            (void)_line;
+            MENGINE_UNUSED( _file );
+            MENGINE_UNUSED( _line );
 
             static T * s_service = nullptr;
 
@@ -50,7 +54,7 @@ namespace Mengine
 
                 if( serviceProvider == nullptr )
                 {
-                    MENGINE_THROW_EXCEPTION_FL( _file, _line )("Service %s invalid get provider"
+                    MENGINE_THROW_EXCEPTION_FL( _file, _line )("Service '%s' invalid get provider"
                         , serviceName
                         );
 
@@ -63,17 +67,17 @@ namespace Mengine
 
                 if( service_ptr == nullptr )
                 {
-                    MENGINE_THROW_EXCEPTION_FL( _file, _line )("Service %s not found"
+                    MENGINE_THROW_EXCEPTION_FL( _file, _line )("Service '%s' not found"
                         , serviceName
                         );
 
                     return nullptr;
                 }
 
-#ifndef NDEBUG
+#ifdef MENGINE_DEBUG
                 if( dynamic_cast<T *>(service_ptr) == nullptr )
                 {
-                    MENGINE_THROW_EXCEPTION_FL( _file, _line )("Service %s invalid cast to %s"
+                    MENGINE_THROW_EXCEPTION_FL( _file, _line )("Service '%s' invalid cast to '%s'"
                         , serviceName
                         , Typename<T>::value
                         );
@@ -85,11 +89,15 @@ namespace Mengine
                 s_service = static_cast<T *>(service_ptr);
             }
 
+            MENGINE_ASSERTION( s_service == nullptr || s_service->isInitializeService() == true, "service '%s' not initialized"
+                , T::getStaticServiceID()
+            );
+
             return s_service;
         }
         //////////////////////////////////////////////////////////////////////////
         template<class T>
-        inline bool existService()
+        bool existService()
         {
             static bool s_exist = false;
 
@@ -111,41 +119,63 @@ namespace Mengine
             return s_exist;
         }
     }
+}
 //////////////////////////////////////////////////////////////////////////
 #define SERVICE_GET( Type )\
-	(Mengine::Helper::getService<Type>(__FILE__, __LINE__))
+	(Mengine::Helper::getService<Type>(MENGINE_CODE_FILE, MENGINE_CODE_LINE))
 //////////////////////////////////////////////////////////////////////////
 #define SERVICE_EXIST( Type )\
 	(Mengine::Helper::existService<Type>())
 //////////////////////////////////////////////////////////////////////////
-#define SERVICE_NAME_CREATE(Name)\
+#define SERVICE_IS_INITIALIZE( Type )\
+	(SERVICE_EXIST( Type ) == true && SERVICE_PROVIDER_GET()->getService( Type::getStaticServiceID() )->isInitializeService() == true)
+//////////////////////////////////////////////////////////////////////////
+#define SERVICE_FUNCTION_CREATE(Name)\
 	__createMengineService##Name
+//////////////////////////////////////////////////////////////////////////
+#define SERVICE_FUNCTION_NOMINATION(Name)\
+	__nominationMengineService##Name
 //////////////////////////////////////////////////////////////////////////
 #define SERVICE_DECLARE( ID )\
     public:\
-        inline static const Char * getStaticServiceID(){ return ID; };\
-		inline const Char * getServiceID() const override { return ID; };\
+        MENGINE_INLINE static const Char * getStaticServiceID(){ return ID; };\
+		MENGINE_INLINE const Char * getServiceID() const override { return ID; };\
     protected:
 //////////////////////////////////////////////////////////////////////////
 #define SERVICE_FACTORY( Name, Implement )\
-    bool SERVICE_NAME_CREATE(Name)(Mengine::ServiceInterfacePtr*_service){\
+    bool SERVICE_FUNCTION_CREATE(Name)(Mengine::ServiceInterfacePtr*_service){\
     if(_service==nullptr){return false;}\
 	try{*_service=new Implement();}catch(...){return false;}\
     return true;}\
+    const Mengine::Char * SERVICE_FUNCTION_NOMINATION(Name)(){\
+    return Implement::getStaticServiceID();}\
 	struct __mengine_dummy_factory##Name{}
 //////////////////////////////////////////////////////////////////////////
-#define SERVICE_EXTERN(Name)\
-	extern bool SERVICE_NAME_CREATE( Name )(Mengine::ServiceInterfacePtr*);
+#define SERVICE_DEPENDENCY( Type, Dependency )\
+    SERVICE_PROVIDER_GET()->dependencyService(Type::getStaticServiceID(), SERVICE_GET(Dependency)->getServiceID())
+//////////////////////////////////////////////////////////////////////////
+#define SERVICE_EXTERN( Name )\
+	extern bool SERVICE_FUNCTION_CREATE( Name )(Mengine::ServiceInterfacePtr*);\
+    extern const Mengine::Char * SERVICE_FUNCTION_NOMINATION( Name )()
 //////////////////////////////////////////////////////////////////////////
 #define SERVICE_CREATE( Name )\
-	SERVICE_PROVIDER_GET()->initializeService(&SERVICE_NAME_CREATE(Name))
+	SERVICE_PROVIDER_GET()->initializeService(&SERVICE_FUNCTION_CREATE(Name), false, #Name, MENGINE_CODE_FILE, MENGINE_CODE_LINE)
 //////////////////////////////////////////////////////////////////////////
-#define SERVICE_GENERATE( Name, Type )\
-	SERVICE_PROVIDER_GET()->generateServiceT<Type>(&SERVICE_NAME_CREATE(Name), __FILE__, __LINE__)
+#define SERVICE_CREATE_SAFE( Name )\
+	SERVICE_PROVIDER_GET()->initializeService(&SERVICE_FUNCTION_CREATE(Name), true, #Name, MENGINE_CODE_FILE, MENGINE_CODE_LINE)
 //////////////////////////////////////////////////////////////////////////
-#define SERVICE_FINALIZE( Type )\
-	SERVICE_PROVIDER_GET()->finalizeServiceT<Type>()
+#define SERVICE_FINALIZE( Name )\
+	SERVICE_PROVIDER_GET()->finalizeService(SERVICE_FUNCTION_NOMINATION(Name)())
 //////////////////////////////////////////////////////////////////////////
-#define SERVICE_DESTROY( Type )\
-	SERVICE_PROVIDER_GET()->destroyServiceT<Type>()
-}
+#define SERVICE_DESTROY( Name )\
+	SERVICE_PROVIDER_GET()->destroyService(SERVICE_FUNCTION_NOMINATION(Name)())
+    //////////////////////////////////////////////////////////////////////////
+#define SERVICE_WAIT( Type, Lambda )\
+    SERVICE_PROVIDER_GET()->waitService(Type::getStaticServiceID(), Lambda)
+    //////////////////////////////////////////////////////////////////////////
+#define SERVICE_LEAVE( Type, Lambda )\
+    SERVICE_PROVIDER_GET()->leaveService(Type::getStaticServiceID(), Lambda)
+//////////////////////////////////////////////////////////////////////////
+#define SERVICE_AVAILABLE( Type )\
+    [](){ static bool available = SERVICE_GET(Type)->isAvailableService(); return available;}()
+//////////////////////////////////////////////////////////////////////////

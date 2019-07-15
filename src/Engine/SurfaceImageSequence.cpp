@@ -1,114 +1,106 @@
 #include "SurfaceImageSequence.h"
 
 #include "Interface/RenderSystemInterface.h"
-#include "Interface/TimelineInterface.h"
+#include "Interface/TimelineServiceInterface.h"
 
 #include "Kernel/ResourceImage.h"
 
-#include "ResourceAnimation.h"
+#include "ResourceImageSequence.h"
 
-#include "Logger/Logger.h"
+#include "Kernel/Logger.h"
+#include "Kernel/Document.h"
+#include "Kernel/AssertionMemoryPanic.h"
 
 #include <math.h>
 
 namespace Mengine
 {
-	//////////////////////////////////////////////////////////////////////////
-	SurfaceImageSequence::SurfaceImageSequence()
-		: m_frameTiming(0.f)
-		, m_currentFrame(0)
-	{
-	}
-	//////////////////////////////////////////////////////////////////////////
-	SurfaceImageSequence::~SurfaceImageSequence()
-	{
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void SurfaceImageSequence::setResourceAnimation( const ResourceAnimationPtr & _resourceAnimation )
-	{
-		if( m_resourceAnimation == _resourceAnimation ) 
-		{
-			return;
-		}
+    //////////////////////////////////////////////////////////////////////////
+    SurfaceImageSequence::SurfaceImageSequence()
+        : m_frameTime( 0.f )
+        , m_currentFrame( 0 )
+    {
+    }
+    //////////////////////////////////////////////////////////////////////////
+    SurfaceImageSequence::~SurfaceImageSequence()
+    {
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void SurfaceImageSequence::setResourceImageSequence( const ResourceImageSequencePtr & _resourceImageSequence )
+    {
+        if( m_resourceImageSequence == _resourceImageSequence )
+        {
+            return;
+        }
 
-		m_resourceAnimation = _resourceAnimation;
-
-		this->recompile();
-	}
-	//////////////////////////////////////////////////////////////////////////
-	const ResourceAnimationPtr & SurfaceImageSequence::getResourceAnimation() const
-	{
-		return m_resourceAnimation;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	bool SurfaceImageSequence::_update( float _current, float _timing )
-	{
-		if( this->isPlay() == false )
-		{
+        this->recompile( [this, _resourceImageSequence]() {m_resourceImageSequence = _resourceImageSequence; } );
+    }
+    //////////////////////////////////////////////////////////////////////////
+    const ResourceImageSequencePtr & SurfaceImageSequence::getResourceImageSequence() const
+    {
+        return m_resourceImageSequence;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    bool SurfaceImageSequence::update( const UpdateContext * _context )
+    {
+        if( this->isPlay() == false )
+        {
             bool invalidate = this->isInvalidateMaterial();
 
-			return invalidate;
-		}
+            return invalidate;
+        }
 
-		if( m_playTime > _current )
-		{
-			float deltha = m_playTime - _current;
-			_timing -= deltha;
-		}
+        float totalTiming = this->calcTotalTime( _context );
 
-		uint32_t frameCount = m_resourceAnimation->getSequenceCount();
+        m_frameTime += totalTiming;
 
-		float speedFactor = this->getAnimationSpeedFactor();
-		float scretch = this->getStretch();
-		m_frameTiming += _timing * speedFactor / scretch;
+        uint32_t frameCount = m_resourceImageSequence->getSequenceCount();
 
-		float frameDelay = m_resourceAnimation->getSequenceDelay( m_currentFrame );
-        
-		uint32_t lastFrame = m_currentFrame;
+        float frameDelay = m_resourceImageSequence->getSequenceDelay( m_currentFrame );
+
+        uint32_t lastFrame = m_currentFrame;
 
         if( m_currentFrame != frameCount )
         {
-            while( m_frameTiming >= frameDelay )
+            while( m_frameTime >= frameDelay )
             {
-                m_frameTiming -= frameDelay;
+                m_frameTime -= frameDelay;
 
-                EVENTABLE_METHOD( this, EVENT_SURFACE_IMAGESEQUENCE_FRAME_END )
+                EVENTABLE_METHOD( EVENT_SURFACE_IMAGESEQUENCE_FRAME_END )
                     ->onSurfaceImageSequenceFrameEnd( m_currentFrame );
-				
-				++m_currentFrame;
 
-                EVENTABLE_METHOD( this, EVENT_SURFACE_IMAGESEQUENCE_FRAME_TICK )
+                ++m_currentFrame;
+
+                EVENTABLE_METHOD( EVENT_SURFACE_IMAGESEQUENCE_FRAME_TICK )
                     ->onSurfaceImageSequenceFrameTick( m_currentFrame, frameCount );
 
                 if( m_currentFrame == frameCount )
                 {
-					bool loop = this->getLoop();
-					bool interrupt = this->isInterrupt();
+                    bool loop = this->isLoop();
+                    bool interrupt = this->isInterrupt();
 
-					if( (loop == false && --m_playIterator == 0) || interrupt == true )
-					{
-						m_currentFrame = frameCount - 1;						
-						m_frameTiming = 0.f;
-						
-						lastFrame = m_currentFrame;
-						
-						this->end();
+                    if( (loop == false && --m_playIterator == 0) || interrupt == true )
+                    {
+                        m_currentFrame = frameCount - 1;
+                        m_frameTime = 0.f;
 
-						break;
-					}
-					else
-					{						
-						float adaptFrameTiming = this->getAdaptTiming(m_frameTiming);
+                        lastFrame = m_currentFrame;
 
-						float newFrameTiming;
-                        m_currentFrame = this->getFrame_( adaptFrameTiming, newFrameTiming );
-						m_frameTiming = newFrameTiming;
+                        this->end();
+
+                        break;
                     }
+                    else
+                    {
+                        float adaptFrameTiming = this->getAdaptTime( m_frameTime );
 
-                    //lastFrame = m_currentFrame;
+                        float newFrameTiming;
+                        m_currentFrame = this->getFrame_( adaptFrameTiming, newFrameTiming );
+                        m_frameTime = newFrameTiming;
+                    }
                 }
 
-                frameDelay = m_resourceAnimation->getSequenceDelay( m_currentFrame );                
+                frameDelay = m_resourceImageSequence->getSequenceDelay( m_currentFrame );
             }
         }
 
@@ -116,247 +108,242 @@ namespace Mengine
         {
             return false;
         }
-		
+
         this->invalidateMaterial();
-		
+
         return true;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	bool SurfaceImageSequence::_compile()
-	{
-		if( m_resourceAnimation == nullptr )
-		{
-			LOGGER_ERROR("SurfaceImageSequence::_compile: '%s' resource is null"
-				, m_name.c_str()
-				);
+    }
+    //////////////////////////////////////////////////////////////////////////
+    bool SurfaceImageSequence::_compile()
+    {
+        MENGINE_ASSERTION_MEMORY_PANIC( m_resourceImageSequence, false, "'%s' resource is null"
+            , this->getName().c_str()
+        );
 
-			return false;
-		}
-
-        if( m_resourceAnimation.compile() == false )
+        if( m_resourceImageSequence->compile() == false )
         {
-            LOGGER_ERROR("Animation::_compile: '%s' resource '%s' is not compile"
-                , m_name.c_str()
-                , m_resourceAnimation->getName().c_str()
-                );
+            LOGGER_ERROR( "'%s' resource '%s' is not compile"
+                , this->getName().c_str()
+                , m_resourceImageSequence->getName().c_str()
+            );
 
             return false;
         }
 
-		uint32_t sequenceCount = m_resourceAnimation->getSequenceCount();
+        uint32_t sequenceCount = m_resourceImageSequence->getSequenceCount();
 
-		if( m_currentFrame >= sequenceCount )
-		{
-			LOGGER_ERROR("Animation::_compile: '%s' m_frame(%d) >= sequenceCount(%d)"
-				, m_name.c_str()
-				, m_currentFrame
-				, sequenceCount
-				);
+        MENGINE_ASSERTION_RETURN( m_currentFrame >= sequenceCount, false, "'%s' m_frame(%d) >= sequenceCount(%d)"
+            , this->getName().c_str()
+            , m_currentFrame
+            , sequenceCount
+        );
 
-			return false;
-		}
+        m_materials.resize( sequenceCount );
 
-		m_materials.resize(sequenceCount);
+        for( uint32_t frameId = 0; frameId != sequenceCount; ++frameId )
+        {
+            const ResourceImagePtr & resourceImage = m_resourceImageSequence->getSequenceResource( frameId );
 
-		for (uint32_t frameId = 0; frameId != sequenceCount; ++frameId)
-		{
-			const ResourceImagePtr & resourceImage = m_resourceAnimation->getSequenceResource(frameId);
+            if( resourceImage->compile() == false )
+            {
+                LOGGER_ERROR( "'%s' invalid compile %d frame"
+                    , this->getName().c_str()
+                    , m_currentFrame
+                );
 
-			if (resourceImage->compile() == false)
-			{
-				LOGGER_ERROR("SurfaceImageSequence::_updateMaterial '%s' invalid compile %d frame"
-					, this->getName().c_str()
-					, m_currentFrame
-					);
+                return false;
+            }
 
-				return false;
-			}
+            RenderMaterialInterfacePtr material = this->makeImageMaterial( resourceImage, false, MENGINE_DOCUMENT_FUNCTION );
 
-			RenderMaterialInterfacePtr material = this->makeImageMaterial(resourceImage, false);
+            MENGINE_ASSERTION_MEMORY_PANIC( material, false, "'%s' resource '%s' m_material is NULL"
+                , this->getName().c_str()
+                , resourceImage->getName().c_str()
+            );
 
-			if (material == nullptr)
-			{
-				LOGGER_ERROR("SurfaceImageSequence::updateMaterial_ %s resource %s m_material is NULL"
-					, this->getName().c_str()
-					, resourceImage->getName().c_str()
-					);
+            m_materials[frameId] = material;
+        }
 
-				return false;
-			}
+        this->invalidateMaterial();
 
-			m_materials[frameId] = material;
-		}
+        return true;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void SurfaceImageSequence::_release()
+    {
+        m_materials.clear();
 
-		this->invalidateMaterial();
-		
-		return true;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void SurfaceImageSequence::_release()
-	{
-		m_materials.clear();
+        m_resourceImageSequence->release();
 
-        m_resourceAnimation.release();
+        m_play = false;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    bool SurfaceImageSequence::_play( uint32_t _enumerator, float _time )
+    {
+        MENGINE_UNUSED( _enumerator );
+        MENGINE_UNUSED( _time );
 
-		m_play = false;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	bool SurfaceImageSequence::_play( uint32_t _enumerator, float _time )
-	{
-        (void)_enumerator;
-        (void)_time;
+        //Empty
 
-		return true;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	bool SurfaceImageSequence::_restart( uint32_t _enumerator, float _time )
-	{
-        (void)_time;
-        (void)_enumerator;
+        return true;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    bool SurfaceImageSequence::_restart( uint32_t _enumerator, float _time )
+    {
+        MENGINE_UNUSED( _time );
+        MENGINE_UNUSED( _enumerator );
 
-		return true;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void SurfaceImageSequence::_pause( uint32_t _enumerator )
-	{
-		(void)_enumerator;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void SurfaceImageSequence::_resume( uint32_t _enumerator, float _time )
-	{
-		(void)_time;
-		(void)_enumerator;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void SurfaceImageSequence::_stop( uint32_t _enumerator )
-	{
-		if( this->isCompile() == false )
-		{
-			LOGGER_ERROR("Animation: '%s' stop not activate"
-				, getName().c_str()
-				);
+        //Empty
 
-			return;
-		}
-        
-        EVENTABLE_METHOD( this, EVENT_ANIMATABLE_STOP )
-            ->onAnimatableStop( _enumerator );
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void SurfaceImageSequence::_end( uint32_t _enumerator )
-	{
-		if( this->isCompile() == false )
-		{
-			LOGGER_ERROR("Animation: '%s' end not activate"
-				, getName().c_str()
-				);
+        return true;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void SurfaceImageSequence::_pause( uint32_t _enumerator )
+    {
+        MENGINE_UNUSED( _enumerator );
 
-			return;
-		}
-        
-        EVENTABLE_METHOD( this, EVENT_ANIMATABLE_END )
-            ->onAnimatableEnd( _enumerator );
-	}
-	//////////////////////////////////////////////////////////////////////////
-	uint32_t SurfaceImageSequence::getFrame_( float _timing, float & _delthaTiming ) const
-	{
-		if( _timing <= 0.f )
-		{
-			_delthaTiming = _timing;
+        //Empty
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void SurfaceImageSequence::_resume( uint32_t _enumerator, float _time )
+    {
+        MENGINE_UNUSED( _time );
+        MENGINE_UNUSED( _enumerator );
 
-			return 0;
-		}
-				
-		float duration = m_resourceAnimation->getSequenceDuration();
+        //Empty
+    }
+    //////////////////////////////////////////////////////////////////////////
+    bool SurfaceImageSequence::_stop( uint32_t _enumerator )
+    {
+        if( this->isCompile() == false )
+        {
+            LOGGER_ERROR( "'%s' stop not activate"
+                , getName().c_str()
+            );
 
-		if( _timing >= duration )
-		{
-			_timing -= floorf( _timing / duration ) * duration;
+            return false;
+        }
 
-            if( fabsf(_timing) < 0.0001f )
-			{
-				_delthaTiming = 0.f;
+        EVENTABLE_METHOD( EVENT_ANIMATION_STOP )
+            ->onAnimationStop( _enumerator );
 
-				return 0;
-			}
-		}
+        return true;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void SurfaceImageSequence::_end( uint32_t _enumerator )
+    {
+        if( this->isCompile() == false )
+        {
+            LOGGER_ERROR( "'%s' end not activate"
+                , getName().c_str()
+            );
 
-		uint32_t count = m_resourceAnimation->getSequenceCount();
+            return;
+        }
 
-		for( uint32_t frame = 0; frame != count; ++frame )
-		{
-			float delay = m_resourceAnimation->getSequenceDelay( frame );
+        EVENTABLE_METHOD( EVENT_ANIMATION_END )
+            ->onAnimationEnd( _enumerator );
+    }
+    //////////////////////////////////////////////////////////////////////////
+    uint32_t SurfaceImageSequence::getFrame_( float _time, float & _deltaTime ) const
+    {
+        if( _time <= 0.f )
+        {
+            _deltaTime = _time;
 
-			_timing -= delay;
+            return 0;
+        }
 
-			if( _timing < 0.f )
-			{
-				_delthaTiming = _timing + delay;
+        float duration = m_resourceImageSequence->getSequenceDuration();
 
-				return frame;
-			}
-		}
+        if( _time >= duration )
+        {
+            _time -= ::floorf( _time / duration ) * duration;
 
-		return count - 1;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	uint32_t SurfaceImageSequence::getCurrentFrame() const
-	{
-		return m_currentFrame;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	uint32_t SurfaceImageSequence::getFrameCount() const
-	{
-        uint32_t count = m_resourceAnimation->getSequenceCount();
+            if( ::fabsf( _time ) < 0.0001f )
+            {
+                _deltaTime = 0.f;
 
-		return count;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	float SurfaceImageSequence::getFrameDelay( uint32_t _frame ) const
-	{
-		float delay = m_resourceAnimation->getSequenceDelay( _frame );
+                return 0;
+            }
+        }
+
+        uint32_t count = m_resourceImageSequence->getSequenceCount();
+
+        for( uint32_t frame = 0; frame != count; ++frame )
+        {
+            float delay = m_resourceImageSequence->getSequenceDelay( frame );
+
+            _time -= delay;
+
+            if( _time < 0.f )
+            {
+                _deltaTime = _time + delay;
+
+                return frame;
+            }
+        }
+
+        return count - 1;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    uint32_t SurfaceImageSequence::getCurrentFrame() const
+    {
+        return m_currentFrame;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    uint32_t SurfaceImageSequence::getFrameCount() const
+    {
+        uint32_t count = m_resourceImageSequence->getSequenceCount();
+
+        return count;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    float SurfaceImageSequence::getFrameDelay( uint32_t _frame ) const
+    {
+        float delay = m_resourceImageSequence->getSequenceDelay( _frame );
 
         return delay;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void SurfaceImageSequence::setCurrentFrame( uint32_t _frame )
-	{
-		m_currentFrame = _frame;
-		m_frameTiming = 0.f;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void SurfaceImageSequence::setCurrentFrame( uint32_t _frame )
+    {
+        m_currentFrame = _frame;
+        m_frameTime = 0.f;
 
-#ifndef NDEBUG
+#ifdef MENGINE_DEBUG
         if( this->isCompile() == true )
         {
-            uint32_t sequenceCount = m_resourceAnimation->getSequenceCount();
+            uint32_t sequenceCount = m_resourceImageSequence->getSequenceCount();
 
             if( _frame >= sequenceCount )
             {
-                LOGGER_ERROR("Animation.setCurrentFrame: '%s' _frame(%d) >= sequenceCount(%d)"
-                    , m_name.c_str()
+                LOGGER_ERROR( "'%s' _frame(%d) >= sequenceCount(%d)"
+                    , this->getName().c_str()
                     , _frame
                     , sequenceCount
-                    );
+                );
 
                 return;
             }
         }
 #endif
 
-		this->invalidateMaterial();
-	}
+        this->invalidateMaterial();
+    }
     //////////////////////////////////////////////////////////////////////////
     const mt::vec2f & SurfaceImageSequence::getMaxSize() const
     {
         if( this->isCompile() == false )
         {
-            LOGGER_ERROR("SurfaceImageSequence.getMaxSize: '%s' not compile"
+            LOGGER_ERROR( "'%s' not compile"
                 , this->getName().c_str()
-                );
+            );
 
             return mt::vec2f::identity();
         }
 
-        const ResourceImagePtr & resourceImage = m_resourceAnimation->getSequenceResource( m_currentFrame );
+        const ResourceImagePtr & resourceImage = m_resourceImageSequence->getSequenceResource( m_currentFrame );
 
         const mt::vec2f & maxSize = resourceImage->getMaxSize();
 
@@ -367,14 +354,14 @@ namespace Mengine
     {
         if( this->isCompile() == false )
         {
-            LOGGER_ERROR("SurfaceImageSequence.getSize: '%s' not compile"
+            LOGGER_ERROR( "'%s' not compile"
                 , this->getName().c_str()
-                );
+            );
 
             return mt::vec2f::identity();
         }
 
-        const ResourceImagePtr & resourceImage = m_resourceAnimation->getSequenceResource( m_currentFrame );
+        const ResourceImagePtr & resourceImage = m_resourceImageSequence->getSequenceResource( m_currentFrame );
 
         const mt::vec2f & size = resourceImage->getSize();
 
@@ -385,14 +372,14 @@ namespace Mengine
     {
         if( this->isCompile() == false )
         {
-            LOGGER_ERROR("SurfaceImageSequence.getOffset: '%s' not compile"
+            LOGGER_ERROR( "'%s' not compile"
                 , this->getName().c_str()
-                );
+            );
 
             return mt::vec2f::identity();
         }
 
-        const ResourceImagePtr & resourceImage = m_resourceAnimation->getSequenceResource( m_currentFrame );
+        const ResourceImagePtr & resourceImage = m_resourceImageSequence->getSequenceResource( m_currentFrame );
 
         const mt::vec2f & offset = resourceImage->getOffset();
 
@@ -403,14 +390,14 @@ namespace Mengine
     {
         if( this->isCompile() == false )
         {
-            LOGGER_ERROR("SurfaceImageSequence.getUVCount: '%s' not compile"
+            LOGGER_ERROR( "'%s' not compile"
                 , this->getName().c_str()
-                );
+            );
 
             return 0;
         }
 
-        const ResourceImagePtr & resourceImage = m_resourceAnimation->getSequenceResource( m_currentFrame );
+        const ResourceImagePtr & resourceImage = m_resourceImageSequence->getSequenceResource( m_currentFrame );
 
         const RenderTextureInterfacePtr & texture = resourceImage->getTexture();
 
@@ -433,26 +420,26 @@ namespace Mengine
     {
         if( this->isCompile() == false )
         {
-            LOGGER_ERROR("SurfaceImageSequence.getUV: '%s' not compile"
+            LOGGER_ERROR( "'%s' not compile"
                 , this->getName().c_str()
-                );
+            );
 
             return mt::uv4f::identity();
         }
 
-        const ResourceImagePtr & resourceImage = m_resourceAnimation->getSequenceResource( m_currentFrame );
+        const ResourceImagePtr & resourceImage = m_resourceImageSequence->getSequenceResource( m_currentFrame );
 
         switch( _index )
         {
         case 0:
             {
-                const mt::uv4f & uv = resourceImage->getUVImage();
+                const mt::uv4f & uv = resourceImage->getUVTextureImage();
 
                 return uv;
             } break;
         case 1:
             {
-                const mt::uv4f & uv = resourceImage->getUVAlpha();
+                const mt::uv4f & uv = resourceImage->getUVTextureAlpha();
 
                 return uv;
             } break;
@@ -464,133 +451,106 @@ namespace Mengine
         return mt::uv4f::identity();
     }
     //////////////////////////////////////////////////////////////////////////
-    void SurfaceImageSequence::correctUV( uint32_t _index, mt::vec2f & _out, const mt::vec2f & _in )
+    const Color & SurfaceImageSequence::getColor() const
     {
         if( this->isCompile() == false )
         {
-            LOGGER_ERROR( "SurfaceImageSequence::correctUV: '%s' not compile"
+            LOGGER_ERROR( "'%s' not compile"
+                , this->getName().c_str()
+            );
+
+            return Color::identity();
+        }
+
+        const ResourceImagePtr & resourceImage = m_resourceImageSequence->getSequenceResource( m_currentFrame );
+
+        const Color & color = resourceImage->getColor();
+
+        return color;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void SurfaceImageSequence::_setFirstFrame()
+    {
+        uint32_t firstFrame = 0;
+
+        this->setCurrentFrame( firstFrame );
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void SurfaceImageSequence::_setLastFrame()
+    {
+        uint32_t sequenceCount = m_resourceImageSequence->getSequenceCount();
+
+        uint32_t lastFrame = sequenceCount - 1;
+
+        this->setCurrentFrame( lastFrame );
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void SurfaceImageSequence::_setTime( float _timing )
+    {
+        if( this->isCompile() == false )
+        {
+            LOGGER_ERROR( "'%s' not activate"
                 , this->getName().c_str()
             );
 
             return;
         }
 
-        const ResourceImagePtr & resourceImage = m_resourceAnimation->getSequenceResource( m_currentFrame );
+        float duration = m_resourceImageSequence->getSequenceDuration();
 
-        switch( _index )
+        m_playIterator = this->getPlayCount();
+
+        uint32_t skipIterator = (uint32_t)((m_intervalStart / duration) + 0.5f);
+
+        if( skipIterator > 0 )
         {
-        case 0:
-            {
-                resourceImage->correctUVImage( _out, _in );
-            } break;
-        case 1:
-            {
-                resourceImage->correctUVAlpha( _out, _in );
-            } break;
-        default:
-            {
-            }break;
+            m_playIterator -= skipIterator;
         }
+
+        m_currentFrame = this->getFrame_( _timing, m_frameTime );
+
+        this->invalidateMaterial();
     }
     //////////////////////////////////////////////////////////////////////////
-    const ColourValue & SurfaceImageSequence::getColor() const
+    float SurfaceImageSequence::_getTime() const
     {
         if( this->isCompile() == false )
         {
-            LOGGER_ERROR("SurfaceImageSequence.getColor: '%s' not compile"
+            LOGGER_ERROR( "'%s' not activate"
                 , this->getName().c_str()
-                );
+            );
 
-            return ColourValue::identity();
+            return 0.f;
         }
 
-        const ResourceImagePtr & resourceImage = m_resourceAnimation->getSequenceResource( m_currentFrame );
+        float timing = 0.f;
 
-        const ColourValue & color = resourceImage->getColor();
+        for( uint32_t frame = 0; frame != m_currentFrame; ++frame )
+        {
+            float delay = m_resourceImageSequence->getSequenceDelay( frame );
 
-        return color;
+            timing += delay;
+        }
+
+        timing += m_frameTime;
+
+        return timing;
     }
-	//////////////////////////////////////////////////////////////////////////
-	void SurfaceImageSequence::_setFirstFrame()
-	{
-		uint32_t firstFrame = 0;
+    //////////////////////////////////////////////////////////////////////////
+    bool SurfaceImageSequence::_interrupt( uint32_t _enumerator )
+    {
+        MENGINE_UNUSED( _enumerator );
 
-		this->setCurrentFrame( firstFrame );
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void SurfaceImageSequence::_setLastFrame()
-	{
-		uint32_t sequenceCount = m_resourceAnimation->getSequenceCount();
+        //Empty
 
-		uint32_t lastFrame = sequenceCount - 1;
+        return true;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    RenderMaterialInterfacePtr SurfaceImageSequence::_updateMaterial() const
+    {
+        const RenderMaterialInterfacePtr & material = m_materials[m_currentFrame];
 
-		this->setCurrentFrame( lastFrame );
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void SurfaceImageSequence::_setTiming( float _timing )
-	{
-		if( this->isCompile() == false )
-		{
-			LOGGER_ERROR("Animation._setTiming: '%s' not activate"
-				, m_name.c_str()
-				);
-
-			return;
-		}
-
-		float duration = m_resourceAnimation->getSequenceDuration();
-
-		m_playIterator = this->getPlayCount();
-
-		uint32_t skipIterator = (uint32_t)((m_intervalStart / duration) + 0.5f);
-
-		if( skipIterator > 0 )
-		{
-			m_playIterator -= skipIterator;
-		}
-		
-		m_currentFrame = this->getFrame_( _timing, m_frameTiming );
-
-		this->invalidateMaterial();
-	}
-	//////////////////////////////////////////////////////////////////////////
-	float SurfaceImageSequence::_getTiming() const
-	{
-		if( this->isCompile() == false )
-		{
-			LOGGER_ERROR("Animation._getTiming: '%s' not activate"
-				, m_name.c_str()
-				);
-
-			return 0.f;
-		}
-
-		float timing = 0.f;
-
-		for( uint32_t frame = 0; frame != m_currentFrame; ++frame )
-		{
-			float delay = m_resourceAnimation->getSequenceDelay( frame );
-
-			timing += delay;
-		}
-
-		timing += m_frameTiming;
-
-		return timing; 
-	}
-	//////////////////////////////////////////////////////////////////////////
-	bool SurfaceImageSequence::_interrupt( uint32_t _enumerator )
-	{
-        (void)_enumerator;
-
-		return true;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	RenderMaterialInterfacePtr SurfaceImageSequence::_updateMaterial() const
-	{		
-		const RenderMaterialInterfacePtr & material = m_materials[m_currentFrame];
-
-		return material;
-	}
-	//////////////////////////////////////////////////////////////////////////
+        return material;
+    }
+    //////////////////////////////////////////////////////////////////////////
 }

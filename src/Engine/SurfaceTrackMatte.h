@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Kernel/Surface.h"
-#include "Kernel/ResourceHolder.h"
 
 namespace Mengine
 {
@@ -15,22 +14,29 @@ namespace Mengine
         ESTM_MODE_LUMA_INVERTED = 4,
     };
     //////////////////////////////////////////////////////////////////////////
-    typedef IntrusivePtr<class ResourceImage> ResourceImagePtr;
+    typedef IntrusivePtr<class ResourceImage, class Resource> ResourceImagePtr;
+    typedef IntrusivePtr<class RenderProgramVariableInterface> RenderProgramVariableInterfacePtr;
     //////////////////////////////////////////////////////////////////////////
-	class SurfaceTrackMatte
-		: public Surface
-	{
-	public:
-		SurfaceTrackMatte();
-		~SurfaceTrackMatte() override;
+    class SurfaceTrackMatte
+        : public Surface
+    {
+    public:
+        SurfaceTrackMatte();
+        ~SurfaceTrackMatte() override;
 
-	public:
-		void setResourceImage( const ResourceImagePtr & _resourceImage );
-		const ResourceImagePtr & getResourceImage() const;
+    public:
+        bool _initialize() override;
 
-	public:
-		void setResourceTrackMatteImage( const ResourceImagePtr & _resourceTrackMatteImage );
-		const ResourceImagePtr & getResourceTrackMatteImage() const;
+    public:
+        void setResourceImage( const ResourceImagePtr & _resourceImage );
+        const ResourceImagePtr & getResourceImage() const;
+
+    public:
+        void setResourceTrackMatteImage( const ResourceImagePtr & _resourceTrackMatteImage );
+        const ResourceImagePtr & getResourceTrackMatteImage() const;
+
+    public:
+        const RenderProgramVariableInterfacePtr & getProgramVariable() const;
 
     public:
         void setTrackMatteMode( ESurfaceTrackMatteMode _trackMatteMode );
@@ -44,26 +50,26 @@ namespace Mengine
         uint32_t getUVCount() const override;
         const mt::uv4f & getUV( uint32_t _index ) const override;
 
-        const ColourValue & getColor() const override;
+        const Color & getColor() const override;
 
-        void correctUV( uint32_t _index, mt::vec2f & _out, const mt::vec2f & _in ) override;
-	
     protected:
-        bool _update( float _current, float _timing ) override;
+        bool update( const UpdateContext * _context ) override;
 
-	protected:
-		bool _compile() override;
-		void _release() override;
+    protected:
+        bool _compile() override;
+        void _release() override;
 
-	protected:
-		RenderMaterialInterfacePtr _updateMaterial() const override;
+    protected:
+        RenderMaterialInterfacePtr _updateMaterial() const override;
 
-	protected:
-		ResourceHolder<ResourceImage> m_resourceImage;
-		ResourceHolder<ResourceImage> m_resourceTrackMatteImage;
+    protected:
+       ResourceImagePtr m_resourceImage;
+       ResourceImagePtr m_resourceTrackMatteImage;
+
+        RenderProgramVariableInterfacePtr m_programVariable;
 
         ESurfaceTrackMatteMode m_trackMatteMode;
-	};
+    };
     //////////////////////////////////////////////////////////////////////////
     typedef IntrusivePtr<SurfaceTrackMatte> SurfaceTrackMattePtr;
     //////////////////////////////////////////////////////////////////////////

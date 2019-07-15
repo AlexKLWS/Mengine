@@ -6,21 +6,12 @@ Metabuf
 	Metacode.h
     Metatype.cpp
     Metatype.h
+    Metacache.h
     protocol.xml
 )
-
-ADD_FILTER(
-Loader
-	LoaderEngine.cpp
-	LoaderEngine.h
-)
    
-INCLUDE_DIRECTORIES( 
-    ${Mengine_SOURCE_DIR} 
-    ${Mengine_SOURCE_DIR}/Utils 
-    ${THIRDPARTY_DIR}/libmath/include
-    ${THIRDPARTY_DIR}/metabuf
-    )     
+INCLUDE_DIRECTORIES( ${THIRDPARTY_DIR}/libmath/include )
+INCLUDE_DIRECTORIES( ${THIRDPARTY_DIR}/metabuf/include )
 
 ADD_MENGINE_LIBRARY()
 

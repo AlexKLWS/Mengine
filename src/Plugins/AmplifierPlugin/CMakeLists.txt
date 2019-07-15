@@ -1,0 +1,31 @@
+SET( MY_LIB_NAME AmplifierPlugin )
+
+ADD_FILTER(
+src
+    AmplifierPlugin.h
+    AmplifierPlugin.cpp
+    AmplifierPlugin.def
+    Amplifier.h
+    Amplifier.cpp
+)
+
+ADD_MENGINE_LIBRARY()
+
+set_target_properties (${MY_LIB_NAME} PROPERTIES
+    FOLDER Plugins
+)
+
+INCLUDE_DIRECTORIES(${THIRDPARTY_DIR}/metabuf)
+INCLUDE_DIRECTORIES(${THIRDPARTY_DIR}/pybind/include)
+INCLUDE_DIRECTORIES(${THIRDPARTY_DIR}/libmath/include)
+
+SET( APPLICATION_DEPENDENCIES
+ ${APPLICATION_DEPENDENCIES}
+ ${MY_LIB_NAME}
+)
+
+
+SET( APPLICATION_DEPENDENCIES
+ ${APPLICATION_DEPENDENCIES}
+ PARENT_SCOPE
+)

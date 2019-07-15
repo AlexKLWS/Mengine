@@ -1,32 +1,33 @@
-#	include <Windows.h>
+#include "Interface/PluginInterface.h"
 
-#	include <shellapi.h>
+#include "Interface/StringizeServiceInterface.h"
+#include "Interface/LoggerInterface.h"
+#include "Interface/CodecInterface.h"
+#include "Interface/DataInterface.h"
+#include "Interface/MemoryInterface.h"
+#include "Interface/FileServiceInterface.h"
+#include "Interface/ImageCodecInterface.h"
+#include "Interface/UnicodeSystemInterface.h"
+#include "Interface/ThreadSystemInterface.h"
+#include "Interface/ArchivatorInterface.h"
+#include "Interface/ConfigServiceInterface.h"
+#include "Interface/CodecServiceInterface.h"
+#include "Interface/PluginServiceInterface.h"
 
-#	include <stdio.h>
+#include "Plugins/XmlToBinPlugin/XmlToBinInterface.h"
 
-#	include <string>
-#	include <vector>
+#include "Kernel/Logger.h"
+#include "Kernel/Document.h"
+#include "Kernel/LoggerBase.h"
+#include "Kernel/FilePathHelper.h"
+#include "ToolUtils/ToolUtils.h"
 
-#	include "Interface/PluginInterface.h"
+#include "Environment/Windows/WindowsIncluder.h"
 
-#	include "Interface/StringizeInterface.h"
-#	include "Interface/LoggerInterface.h"
-#	include "Interface/CodecInterface.h"
-#	include "Interface/DataInterface.h"
-#	include "Interface/MemoryInterface.h"
-#   include "Interface/FileSystemInterface.h"
-#   include "Interface/WindowsLayerInterface.h"
-#   include "Interface/ImageCodecInterface.h"
-#   include "Interface/UnicodeInterface.h"
-#   include "Interface/ThreadSystemInterface.h"
-#	include "Interface/ArchiveInterface.h"
-#	include "Interface/ConfigInterface.h"
-#	include "Interface/XmlCodecInterface.h"
+#include <string>
+#include <vector>
 
-#   include "WindowsLayer/VistaWindowsLayer.h"
-
-#	include "Logger/Logger.h"
-#	include "ToolUtils/ToolUtils.h"
+#include <stdio.h>
 
 //////////////////////////////////////////////////////////////////////////
 PLUGIN_EXPORT( Win32FileGroup );
@@ -46,9 +47,7 @@ SERVICE_EXTERN( ConfigService );
 SERVICE_EXTERN( ThreadSystem );
 SERVICE_EXTERN( ThreadService );
 SERVICE_EXTERN( MemoryService );
-SERVICE_EXTERN( WindowsLayer );
 SERVICE_EXTERN( FileService );
-SERVICE_EXTERN( PluginSystem );
 SERVICE_EXTERN( PluginService );
 //////////////////////////////////////////////////////////////////////////
 namespace Mengine
@@ -70,7 +69,7 @@ namespace Mengine
         SERVICE_CREATE( LoggerService );
 
         class MyLogger
-            : public LoggerInterface
+            : public LoggerBase
         {
         public:
             MyLogger()
@@ -80,49 +79,7 @@ namespace Mengine
             }
 
         public:
-            bool initialize() override
-            {
-                return true;
-            }
-
-            void finalize() override
-            {
-            };
-
-        public:
-            void setVerboseLevel( EMessageLevel _level ) override
-            {
-                m_verboseLevel = _level;
-            };
-
-            void setVerboseFlag( size_t _flag ) override
-            {
-                m_verboseFlag = _flag;
-            };
-
-        public:
-            bool validMessage( EMessageLevel _level, size_t _flag ) const override
-            {
-                if( m_verboseLevel < _level )
-                {
-                    return false;
-                }
-
-                if( _flag == 0 )
-                {
-                    return true;
-                }
-
-                if( (m_verboseFlag & _flag) == 0 )
-                {
-                    return false;
-                }
-
-                return true;
-            };
-
-        public:
-            void log( EMessageLevel _level, size_t _flag, const char * _data, size_t _count ) override
+            void log( EMessageLevel _level, uint32_t _flag, const Char * _data, uint32_t _count ) override
             {
                 (void)_level;
                 (void)_flag;
@@ -131,10 +88,6 @@ namespace Mengine
                 message_error( "%s"
                     , _data
                 );
-            }
-
-            void flush() override
-            {
             }
 
         protected:
@@ -146,7 +99,7 @@ namespace Mengine
             ->setVerboseLevel( LM_WARNING );
 
         LOGGER_SERVICE()
-            ->registerLogger( new MyLogger );
+            ->registerLogger( Helper::makeFactorableUnique<MyLogger>() );
 
         SERVICE_CREATE( CodecService );
         SERVICE_CREATE( DataService );
@@ -156,10 +109,8 @@ namespace Mengine
 
         SERVICE_CREATE( ThreadService );
         SERVICE_CREATE( MemoryService );
-        SERVICE_CREATE( PluginSystem );
         SERVICE_CREATE( PluginService );
 
-        SERVICE_CREATE( WindowsLayer );
         SERVICE_CREATE( FileService );
 
         PLUGIN_CREATE( Win32FileGroup );
@@ -168,7 +119,7 @@ namespace Mengine
         PLUGIN_CREATE( LZ4 );
 
         if( FILE_SERVICE()
-            ->mountFileGroup( ConstString::none(), nullptr, Helper::emptyPath(), Helper::stringizeString( "dir" ), nullptr ) == false )
+            ->mountFileGroup( ConstString::none(), nullptr, Helper::emptyPath(), Helper::stringizeString( "dir" ), nullptr, MENGINE_DOCUMENT_FUNCTION ) == false )
         {
             return false;
         }
@@ -176,7 +127,7 @@ namespace Mengine
         ConstString dev = Helper::stringizeString( "dev" );
 
         if( FILE_SERVICE()
-            ->mountFileGroup( dev, nullptr, Helper::emptyPath(), Helper::stringizeString( "dir" ), nullptr ) == false )
+            ->mountFileGroup( dev, nullptr, Helper::emptyPath(), Helper::stringizeString( "dir" ), nullptr, MENGINE_DOCUMENT_FUNCTION ) == false )
         {
             return false;
         }
@@ -233,28 +184,30 @@ int APIENTRY wWinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmd
     Mengine::FilePath fp_out = Mengine::Helper::unicodeToFilePath( out );
 
     if( PLUGIN_SERVICE()
-        ->loadPlugin( L"XmlCodecPlugin.dll" ) == false )
+        ->loadPlugin( "XmlToBinPlugin.dll" ) == false )
     {
         return 0;
     }
 
+    using namespace Mengine::Literals;
+
     Mengine::XmlDecoderInterfacePtr decoder = CODEC_SERVICE()
-        ->createDecoderT<Mengine::XmlDecoderInterfacePtr>( STRINGIZE_STRING_LOCAL( "xml2bin" ) );
+        ->createDecoderT<Mengine::XmlDecoderInterfacePtr>( STRINGIZE_STRING_LOCAL( "xml2bin" ), MENGINE_DOCUMENT_FUNCTION );
 
     if( decoder == nullptr )
     {
-        LOGGER_ERROR( "LoaderEngine::makeBin_ invalid create decoder xml2bin for %s"
+        LOGGER_ERROR( "invalid create decoder xml2bin for %s"
             , fp_in.c_str()
-            );
+        );
 
         return 0;
     }
 
     if( decoder->prepareData( nullptr ) == false )
     {
-        LOGGER_ERROR( "LoaderEngine::makeBin_ invalid initialize decoder xml2bin for %s"
+        LOGGER_ERROR( "invalid initialize decoder xml2bin for %s"
             , fp_in.c_str()
-            );
+        );
 
         return 0;
     }
@@ -268,7 +221,7 @@ int APIENTRY wWinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmd
     if( fileGroup == nullptr )
     {
         LOGGER_ERROR( "LoaderEngine::makeBin_ invalid get file group"
-            );
+        );
 
         return 0;
     }

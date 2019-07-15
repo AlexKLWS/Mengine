@@ -1,113 +1,134 @@
 #include "ResourceWindow.h"
 
-#include "Interface/ResourceInterface.h"
+#include "Interface/ResourceServiceInterface.h"
 
-#include "Metacode/Metacode.h"
-
-#include "Logger/Logger.h"
-
+#include "Kernel/Logger.h"
 #include "Kernel/ResourceImage.h"
+#include "Kernel/AssertionMemoryPanic.h"
 
 namespace Mengine
 {
-	//////////////////////////////////////////////////////////////////////////
-	ResourceWindow::ResourceWindow()
-	{
-		for( int i = 0; i < ResourceWindow_Count; i++ )
-		{
-			m_images[i].resource = nullptr;
-		}
-	}
-	//////////////////////////////////////////////////////////////////////////
-	ResourceWindow::~ResourceWindow()
-	{
-	}
-	//////////////////////////////////////////////////////////////////////////
-	bool ResourceWindow::_loader( const Metabuf::Metadata * _meta )
-	{
-        const Metacode::Meta_Data::Meta_DataBlock::Meta_ResourceWindow * metadata 
-            = static_cast<const Metacode::Meta_Data::Meta_DataBlock::Meta_ResourceWindow *>(_meta);
+    //////////////////////////////////////////////////////////////////////////
+    ResourceWindow::ResourceWindow()
+    {
+        for( uint32_t i = 0; i < ResourceWindow_Count; i++ )
+        {
+            m_elements[i].resourceImage = nullptr;
+        }
+    }
+    //////////////////////////////////////////////////////////////////////////
+    ResourceWindow::~ResourceWindow()
+    {
+    }
+    //////////////////////////////////////////////////////////////////////////
+    bool ResourceWindow::_compile()
+    {
+        for( uint32_t i = 0; i < ResourceWindow_Count; i++ )
+        {
+            WindowElement & element = m_elements[i];
 
-        metadata->get_WindowBackground_ResourceImageName( &m_images[ResourceWindow_Background].resourceName );
+            element.resourceImage = nullptr;
 
-        m_images[ResourceWindow_Bottom].resourceName = metadata->get_WindowBottom_ResourceImageName();
-        m_images[ResourceWindow_Left].resourceName = metadata->get_WindowLeft_ResourceImageName();
-        m_images[ResourceWindow_LeftBottom].resourceName = metadata->get_WindowLeftBottom_ResourceImageName();
-        m_images[ResourceWindow_LeftTop].resourceName = metadata->get_WindowLeftTop_ResourceImageName();
-        m_images[ResourceWindow_Right].resourceName = metadata->get_WindowRight_ResourceImageName();
-        m_images[ResourceWindow_RightBottom].resourceName = metadata->get_WindowRightBottom_ResourceImageName();
-        m_images[ResourceWindow_RightTop].resourceName = metadata->get_WindowRightTop_ResourceImageName();
-        m_images[ResourceWindow_Top].resourceName = metadata->get_WindowTop_ResourceImageName();
-        
-        m_images[ResourceWindow_Bottom].offset = metadata->get_WindowBottom_Offset();
-        m_images[ResourceWindow_Left].offset = metadata->get_WindowLeft_Offset();
-        m_images[ResourceWindow_LeftBottom].offset = metadata->get_WindowLeftBottom_Offset();
-        m_images[ResourceWindow_LeftTop].offset = metadata->get_WindowLeftTop_Offset();
-        m_images[ResourceWindow_Right].offset = metadata->get_WindowRight_Offset();
-        m_images[ResourceWindow_RightBottom].offset = metadata->get_WindowRightBottom_Offset();
-        m_images[ResourceWindow_RightTop].offset = metadata->get_WindowRightTop_Offset();
-        m_images[ResourceWindow_Top].offset = metadata->get_WindowTop_Offset();
+            if( element.resourceImageName.empty() == true )
+            {
+                if( i == ResourceWindow_Background )
+                {
+                    continue;
+                }
+            }
+
+            const ResourceImagePtr & resourceImage = RESOURCE_SERVICE()
+                ->getResource( m_elements[i].resourceImageName );
+
+            MENGINE_ASSERTION_MEMORY_PANIC( resourceImage, false, "window '%s' not found resource '%s'"
+                , this->getName().c_str()
+                , element.resourceImageName.c_str()
+            );
+
+            element.resourceImage = resourceImage;
+        }
 
         return true;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	bool ResourceWindow::_compile()
-	{
-		for( int i = 0; i < ResourceWindow_Count; i++ )
-		{
-			m_images[i].resource = nullptr;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void ResourceWindow::_release()
+    {
+        for( uint32_t i = 0; i < ResourceWindow_Count; i++ )
+        {
+            WindowElement & element = m_elements[i];
 
-			if( m_images[i].resourceName.empty() == true )
-			{
-				if( i == ResourceWindow_Background )
-				{
-					continue;
-				}
-			}
+            if( element.resourceImage != nullptr )
+            {
+                element.resourceImage->release();
+                element.resourceImage = nullptr;
+            }
+        }
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void ResourceWindow::setElementResourceImageName( uint32_t _type, const ConstString & _resourceImageName )
+    {
+        MENGINE_ASSERTION( _type >= ResourceWindow_Count, "resource window '%s' set invalid type '%d' (resource)"
+            , this->getName().c_str()
+            , _type
+        );
 
-            ResourceImagePtr resource = RESOURCE_SERVICE()
-                ->getResource( m_images[i].resourceName );
-			
-			if( resource == 0 )
-			{
-				LOGGER_ERROR("ResourceWindow: '%s' Image resource not found resource '%s'"
-					, m_name.c_str()
-					, m_images[i].resourceName.c_str() 
-					);
+        WindowElement & element = m_elements[_type];
 
-				return false;
-			}
+        element.resourceImageName = _resourceImageName;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    const ConstString & ResourceWindow::getElementResourceImageName( uint32_t _type ) const
+    {
+        MENGINE_ASSERTION( _type >= ResourceWindow_Count, "resource window '%s' get invalid type '%d' (resource)"
+            , this->getName().c_str()
+            , _type
+        );
 
-			m_images[i].resource = resource;
-		}
+        const WindowElement & element = m_elements[_type];
 
-		return true;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void ResourceWindow::_release()
-	{
-		for( int i = 0; i < ResourceWindow_Count; i++ )
-		{
-			if( m_images[i].resource != nullptr )
-			{
-				m_images[i].resource->decrementReference();
-				m_images[i].resource = nullptr;
-			}
-		}
-	}
-	//////////////////////////////////////////////////////////////////////////
-	const ResourceImagePtr & ResourceWindow::getResource( int _type ) const
-	{
-		const ResourceImagePtr & resource = m_images[_type].resource;
+        const ConstString & resourceImageName = element.resourceImageName;
 
-		return resource;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	const mt::vec2f & ResourceWindow::getOffset( int _type ) const
-	{
-		const mt::vec2f & offset = m_images[_type].offset;
+        return resourceImageName;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void ResourceWindow::setElementOffset( uint32_t _type, const mt::vec2f & _offset )
+    {
+        MENGINE_ASSERTION( _type >= ResourceWindow_Count, "resource window '%s' set invalid type '%d' (offset)"
+            , this->getName().c_str()
+            , _type
+        );
 
-		return offset;
-	}
-	//////////////////////////////////////////////////////////////////////////
+        WindowElement & element = m_elements[_type];
+
+        element.offset = _offset;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    const mt::vec2f & ResourceWindow::getElementOffset( uint32_t _type ) const
+    {
+        MENGINE_ASSERTION( _type >= ResourceWindow_Count, "resource window '%s' get invalid type '%d' (offset)"
+            , this->getName().c_str()
+            , _type
+        );
+
+        const WindowElement & element = m_elements[_type];
+
+        const mt::vec2f & offset = element.offset;
+
+        return offset;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    const ResourceImagePtr & ResourceWindow::getElementResourceImage( uint32_t _type ) const
+    {
+        MENGINE_ASSERTION( _type >= ResourceWindow_Count, "resource window '%s' get invalid type '%d' (image)"
+            , this->getName().c_str()
+            , _type
+        );
+
+        const WindowElement & element = m_elements[_type];
+
+        const ResourceImagePtr & resourceImage = element.resourceImage;
+
+        return resourceImage;
+    }
+    //////////////////////////////////////////////////////////////////////////
 }

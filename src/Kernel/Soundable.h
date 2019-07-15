@@ -1,21 +1,20 @@
 #pragma once
 
-#include "Core/Mixin.h"
-#include "Core/IntrusivePtr.h"
+#include "Kernel/Mixin.h"
 
 namespace Mengine
 {
-	class Soundable
+    class Soundable
         : public Mixin
-	{
-	public:
-		void setVolume( float _volume );
-		float getVolume() const;
+    {
+    public:
+        void setVolume( float _volume );
+        float getVolume() const;
 
-	protected:
-		virtual void _setVolume( float _volume );
-		virtual float _getVolume() const;
-	};
+    protected:
+        virtual void _setVolume( float _volume );
+        virtual float _getVolume() const;
+    };
     //////////////////////////////////////////////////////////////////////////
     typedef IntrusivePtr<Soundable> SoundablePtr;
     //////////////////////////////////////////////////////////////////////////

@@ -1,9 +1,7 @@
 #include "Scene.h"
 
-#include "Interface/ResourceInterface.h"
-#include "Interface/NodeInterface.h"
-
-#include "Logger/Logger.h"
+#include "Kernel/BaseEventation.h"
+#include "Kernel/Logger.h"
 
 namespace Mengine
 {
@@ -18,12 +16,12 @@ namespace Mengine
     //////////////////////////////////////////////////////////////////////////
     void Scene::onAppMouseLeave()
     {
-        bool handle = EVENTABLE_METHODRT( m_scriptEventable, EVENT_APP_MOUSE_LEAVE, false, SceneEventReceiver )
-            ->onSceneAppMouseLeave( m_object );
+        bool handle = EVENTABLE_METHODR( EVENT_SCENE_APP_MOUSE_LEAVE, false )
+            ->onSceneAppMouseLeave( m_behavior );
 
         if( handle == false )
         {
-            for( TSlugChild it( m_children ); it.eof() == false; )
+            for( IntrusiveSlugChild it( m_children ); it.eof() == false; )
             {
                 Scene * subScene = dynamic_cast<Scene *>(*it);
 
@@ -39,12 +37,12 @@ namespace Mengine
     //////////////////////////////////////////////////////////////////////////
     void Scene::onAppMouseEnter()
     {
-        bool handle = EVENTABLE_METHODRT( m_scriptEventable, EVENT_APP_MOUSE_ENTER, false, SceneEventReceiver )
-            ->onSceneAppMouseEnter( m_object );
+        bool handle = EVENTABLE_METHODR( EVENT_SCENE_APP_MOUSE_ENTER, false )
+            ->onSceneAppMouseEnter( m_behavior );
 
         if( handle == false )
         {
-            for( TSlugChild it( m_children ); it.eof() == false; )
+            for( IntrusiveSlugChild it( m_children ); it.eof() == false; )
             {
                 Scene * subScene = dynamic_cast<Scene *>(*it);
 
@@ -60,18 +58,18 @@ namespace Mengine
     //////////////////////////////////////////////////////////////////////////
     void Scene::onFocus( bool _focus )
     {
-        bool handle = EVENTABLE_METHODRT( m_scriptEventable, EVENT_FOCUS, false, SceneEventReceiver )
-            ->onSceneAppFocus( m_object, _focus );
+        bool handle = EVENTABLE_METHODR( EVENT_SCENE_FOCUS, false )
+            ->onSceneAppFocus( m_behavior, _focus );
 
         if( handle == false )
         {
-            for( TSlugChild it( m_children ); it.eof() == false; )
+            for( IntrusiveSlugChild it( m_children ); it.eof() == false; )
             {
-                Node * children = *it;
+                NodePtr children( *it );
 
                 it.next_shuffle();
 
-                Scene * subScene = dynamic_cast<Scene *>(children);
+                Scene * subScene = dynamic_cast<Scene *>(children.get());
 
                 if( subScene != nullptr )
                 {
@@ -79,5 +77,19 @@ namespace Mengine
                 }
             }
         }
+    }
+    //////////////////////////////////////////////////////////////////////////
+    const RenderViewportInterfacePtr & Scene::getPickerViewport() const
+    {
+        const RenderViewportInterfacePtr & viewport = this->getRenderViewport();
+
+        return viewport;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    const RenderCameraInterfacePtr & Scene::getPickerCamera() const
+    {
+        const RenderCameraInterfacePtr & camera = this->getRenderCamera();
+
+        return camera;
     }
 }

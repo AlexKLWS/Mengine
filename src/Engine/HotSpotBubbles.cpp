@@ -1,149 +1,149 @@
 #include "HotSpotBubbles.h"
 
-#include "Interface/RenderSystemInterface.h"
+#include "Interface/RenderCameraInterface.h"
+#include "Interface/EnumeratorServiceInterface.h"
 
-#include "Logger/Logger.h"
+#include "Kernel/Logger.h"
 
 namespace Mengine
 {
-	//////////////////////////////////////////////////////////////////////////
-	HotSpotBubbles::HotSpotBubbles()
-		: m_enumerator(0)
-		, m_invalidateBubbleWM(true)
-	{
-	}
-	//////////////////////////////////////////////////////////////////////////
-	HotSpotBubbles::~HotSpotBubbles()
-	{
-	}
-	//////////////////////////////////////////////////////////////////////////
-	uint32_t HotSpotBubbles::addBubble( const mt::vec2f & _pos, float _radius, float _ellipse, bool _outward )
-	{		
-		Bubble b;
+    //////////////////////////////////////////////////////////////////////////
+    HotSpotBubbles::HotSpotBubbles()
+        : m_invalidateBubbleWM( true )
+    {
+    }
+    //////////////////////////////////////////////////////////////////////////
+    HotSpotBubbles::~HotSpotBubbles()
+    {
+    }
+    //////////////////////////////////////////////////////////////////////////
+    uint32_t HotSpotBubbles::addBubble( const mt::vec2f & _pos, float _radius, float _ellipse, bool _outward )
+    {
+        Bubble bubble;
 
-		uint32_t new_id = ++m_enumerator;
-		b.id = new_id;
-		b.pos = _pos;
-		b.pos_wm = _pos;
-		b.radius = _radius;
-		b.ellipse = _ellipse;
-		b.outward = _outward;
+        uint32_t new_id = GENERATE_UNIQUE_IDENTITY();
+        bubble.id = new_id;
+        bubble.pos = _pos;
+        bubble.pos_wm = _pos;
+        bubble.radius = _radius;
+        bubble.ellipse = _ellipse;
+        bubble.outward = _outward;
 
-		m_bubbles.emplace_back( b );
+        m_bubbles.emplace_back( bubble );
 
-		return new_id;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	bool HotSpotBubbles::testPoint( const RenderCameraInterfacePtr & _camera, const RenderViewportInterfacePtr & _viewport, const Resolution & _contentResolution, const mt::vec2f & _point ) const
-	{
-		(void)_contentResolution;
-		(void)_viewport;
-		
-		if( m_global == true )
-		{
-			return !m_outward;
-		}
+        return new_id;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    bool HotSpotBubbles::testPoint( const RenderCameraInterfacePtr & _camera, const RenderViewportInterfacePtr & _viewport, const Resolution & _contentResolution, const mt::vec2f & _point ) const
+    {
+        MENGINE_UNUSED( _contentResolution );
+        MENGINE_UNUSED( _viewport );
 
-		const mt::mat4f & vm_inv = _camera->getCameraViewMatrixInv();
+        if( m_global == true )
+        {
+            return !m_outward;
+        }
 
-		mt::vec2f pointIn1;
-		mt::mul_v2_v2_m4( pointIn1, _point, vm_inv );
+        const mt::mat4f & vm_inv = _camera->getCameraViewMatrixInv();
 
-		this->updateBubbleWM_();
+        mt::vec2f pointIn1;
+        mt::mul_v2_v2_m4( pointIn1, _point, vm_inv );
 
-		for( const Bubble & b : m_bubbles )
-		{
-			mt::vec2f v = pointIn1 - b.pos_wm;
+        this->updateBubbleWM_();
 
-			v.y /= b.ellipse;
+        for( const Bubble & bubble : m_bubbles )
+        {
+            mt::vec2f v = pointIn1 - bubble.pos_wm;
 
-			float v_sqrlength = v.sqrlength();
+            v.y /= bubble.ellipse;
 
-			if( v_sqrlength < b.radius * b.radius )
-			{
-				return !m_outward;
-			}
-		}
+            float v_sqrlength = v.sqrlength();
 
-		return m_outward;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	bool HotSpotBubbles::testRadius( const RenderCameraInterfacePtr & _camera, const RenderViewportInterfacePtr & _viewport, const Resolution & _contentResolution, const mt::vec2f & _point, float _radius ) const
-	{
-		(void)_contentResolution;
-		(void)_viewport;
-		
-		if( m_global == true )
-		{
-			return !m_outward;
-		}
+            if( v_sqrlength < bubble.radius * bubble.radius )
+            {
+                return !m_outward;
+            }
+        }
 
-		const mt::mat4f & vm_inv = _camera->getCameraViewMatrixInv();
+        return m_outward;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    bool HotSpotBubbles::testRadius( const RenderCameraInterfacePtr & _camera, const RenderViewportInterfacePtr & _viewport, const Resolution & _contentResolution, const mt::vec2f & _point, float _radiusx, float _radiusy ) const
+    {
+        MENGINE_UNUSED( _contentResolution );
+        MENGINE_UNUSED( _viewport );
 
-		mt::vec2f pointIn1;
-		mt::mul_v2_v2_m4( pointIn1, _point, vm_inv );
+        if( m_global == true )
+        {
+            return !m_outward;
+        }
 
-		this->updateBubbleWM_();
+        const mt::mat4f & vm_inv = _camera->getCameraViewMatrixInv();
 
-		for( const Bubble & b : m_bubbles )
-		{
-			mt::vec2f v = pointIn1 - b.pos_wm;
+        mt::vec2f pointIn1;
+        mt::mul_v2_v2_m4( pointIn1, _point, vm_inv );
 
-			v.y /= b.ellipse;
-
-			float v_sqrlength = v.sqrlength();
-
-			if( v_sqrlength < (b.radius + _radius) * (b.radius + _radius) )
-			{
-				return !m_outward;
-			}
-		}
-
-		return m_outward;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	bool HotSpotBubbles::testPolygon( const RenderCameraInterfacePtr & _camera, const RenderViewportInterfacePtr & _viewport, const Resolution & _contentResolution, const mt::vec2f & _point, const Polygon & _polygon ) const
-	{
-		if( m_global == true )
-		{
-			return !m_outward;
-		}
-
-		//TODO:
-		(void)_polygon;
-
-		bool test = this->testPoint( _camera, _viewport, _contentResolution, _point );
-
-		return test;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void HotSpotBubbles::_invalidateWorldMatrix()
-	{
-		HotSpot::_invalidateWorldMatrix();
-
-		this->invalidatemBubbleWM_();
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void HotSpotBubbles::invalidatemBubbleWM_()
-	{
-		m_invalidateBubbleWM = true;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void HotSpotBubbles::updateBubbleWM_() const
-	{
-		if( m_invalidateBubbleWM == false )
-		{
-			return;
-		}
-
-		m_invalidateBubbleWM = false;
-
-		const mt::mat4f & wm = this->getWorldMatrix();
+        this->updateBubbleWM_();
 
         for( const Bubble & b : m_bubbles )
-		{
-			mt::mul_v2_v2_m4( b.pos_wm, b.pos, wm );
-		}
-	}
+        {
+            mt::vec2f v = pointIn1 - b.pos_wm;
 
-}	
+            v.y /= b.ellipse;
+
+            float v_sqrlength = v.sqrlength();
+
+            if( v_sqrlength < (b.radius + _radiusx) * (b.radius + _radiusy) )
+            {
+                return !m_outward;
+            }
+        }
+
+        return m_outward;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    bool HotSpotBubbles::testPolygon( const RenderCameraInterfacePtr & _camera, const RenderViewportInterfacePtr & _viewport, const Resolution & _contentResolution, const mt::vec2f & _point, const Polygon & _polygon ) const
+    {
+        if( m_global == true )
+        {
+            return !m_outward;
+        }
+
+        //TODO:
+        MENGINE_UNUSED( _polygon );
+
+        bool test = this->testPoint( _camera, _viewport, _contentResolution, _point );
+
+        return test;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void HotSpotBubbles::_invalidateWorldMatrix()
+    {
+        HotSpot::_invalidateWorldMatrix();
+
+        this->invalidatemBubbleWM_();
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void HotSpotBubbles::invalidatemBubbleWM_()
+    {
+        m_invalidateBubbleWM = true;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void HotSpotBubbles::updateBubbleWM_() const
+    {
+        if( m_invalidateBubbleWM == false )
+        {
+            return;
+        }
+
+        m_invalidateBubbleWM = false;
+
+        const mt::mat4f & wm = this->getWorldMatrix();
+
+        for( const Bubble & b : m_bubbles )
+        {
+            mt::mul_v2_v2_m4( b.pos_wm, b.pos, wm );
+        }
+    }
+
+}

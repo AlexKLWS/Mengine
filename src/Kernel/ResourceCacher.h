@@ -28,19 +28,19 @@ namespace Mengine
         void clear();
 
     public:
-        T findCache();
+        const T & findCache() const;
 
     protected:
         struct ResourceCacherDesc
         {
             T value;
-            bool use;
+            mutable bool use;
             bool lock;
         };
 
     protected:
-        typedef Vector<ResourceCacherDesc> TVectorResourceCacherDesc;
-        TVectorResourceCacherDesc m_cachers;
+        typedef Vector<ResourceCacherDesc> VectorResourceCacherDesc;
+        VectorResourceCacherDesc m_cachers;
 
         class FEraseCacher;
     };
@@ -80,7 +80,7 @@ namespace Mengine
     template<class T>
     void ResourceCacher<T>::removeCache( const T & _ptr )
     {
-        for( typename TVectorResourceCacherDesc::iterator
+        for( typename VectorResourceCacherDesc::iterator
             it = m_cachers.begin(),
             it_end = m_cachers.end();
             it != it_end;
@@ -129,9 +129,9 @@ namespace Mengine
     }
     //////////////////////////////////////////////////////////////////////////
     template<class T>
-    T ResourceCacher<T>::findCache()
+    const T & ResourceCacher<T>::findCache() const
     {
-        for( ResourceCacherDesc & desc : m_cachers )
+        for( const ResourceCacherDesc & desc : m_cachers )
         {
             if( desc.use == true )
             {
@@ -143,6 +143,6 @@ namespace Mengine
             return desc.value;
         }
 
-        return nullptr;
+        return T::none();
     }
 }

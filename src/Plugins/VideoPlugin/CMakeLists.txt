@@ -1,0 +1,74 @@
+set( MY_LIB_NAME VideoPlugin )
+
+ADD_FILTER(
+src
+	VideoInterface.h
+	VideoUnknownInterface.h
+
+	VideoPlugin.h
+	VideoPlugin.cpp
+    VideoPlugin.def
+    
+    ResourceVideo.cpp
+    ResourceVideo.h
+    
+    LoaderResourceVideo.cpp
+    LoaderResourceVideo.h    
+	
+	SurfaceVideo.cpp
+	SurfaceVideo.h
+    
+    VideoScriptEmbedding.cpp
+    VideoScriptEmbedding.h
+	
+	ResourceVideoValidator.cpp
+	ResourceVideoValidator.h
+	)
+    
+add_definitions(-DMETABUF_EXTERNAL_CONFIG)
+
+INCLUDE_DIRECTORIES( ${THIRDPARTY_DIR}/libmath/include )
+INCLUDE_DIRECTORIES( ${THIRDPARTY_DIR}/pybind/include )
+INCLUDE_DIRECTORIES( ${THIRDPARTY_DIR}/metabuf/include )
+
+ADD_MENGINE_PLUGIN(MENGINE_PLUGIN_VIDEO)
+
+set_target_properties (${MY_LIB_NAME} PROPERTIES
+    FOLDER Plugins
+)
+
+TARGET_LINK_LIBRARIES(${MY_LIB_NAME} ${THIRDPARTY_LIB_DIR}/${MENGINE_LIB_PREFIX}stdex${MENGINE_LIB_SUFFIX})
+TARGET_LINK_LIBRARIES(${MY_LIB_NAME} ${THIRDPARTY_LIB_DIR}/${MENGINE_LIB_PREFIX}math${MENGINE_LIB_SUFFIX})
+TARGET_LINK_LIBRARIES(${MY_LIB_NAME} ${THIRDPARTY_LIB_DIR}/${MENGINE_LIB_PREFIX}pybind${MENGINE_LIB_SUFFIX})
+TARGET_LINK_LIBRARIES(${MY_LIB_NAME} ${THIRDPARTY_LIB_DIR}/${MENGINE_LIB_PREFIX}metabuf${MENGINE_LIB_SUFFIX})
+
+TARGET_LINK_LIBRARIES(${MY_LIB_NAME} ${VIDEO_CODEC_STATIC_LIBS})
+
+IF(MENGINE_PLUGIN_VIDEO_DLL)
+    TARGET_LINK_LIBRARIES(${MY_LIB_NAME} Kernel)
+ELSE()
+    SET( APPLICATION_DEPENDENCIES
+     ${APPLICATION_DEPENDENCIES}
+     ${MY_LIB_NAME}
+     Kernel
+    )
+
+    SET( APPLICATION_DEPENDENCIES
+     ${APPLICATION_DEPENDENCIES}
+     PARENT_SCOPE
+    )
+
+    SET( APPLICATION_LIB_PATHS
+     ${APPLICATION_LIB_PATHS}
+    )
+
+    SET( APPLICATION_LIB_PATHS
+     ${APPLICATION_LIB_PATHS}
+     PARENT_SCOPE
+    )
+
+    SET( APPLICATION_LIBS
+     ${APPLICATION_LIBS} 
+     PARENT_SCOPE
+    )
+ENDIF()

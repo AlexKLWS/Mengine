@@ -5,10 +5,7 @@ src
     MovieResource.cpp
 )
 
-add_definitions(-DUNICODE)
-add_definitions(-D_UNICODE)
-
-INCLUDE_DIRECTORIES( ${Mengine_SOURCE_DIR}/Utils
+INCLUDE_DIRECTORIES( 
 			         ${THIRDPARTY_DIR}/astralax
                      ${THIRDPARTY_DIR}/libmovie/include
                      ${THIRDPARTY_DIR}/pugixml/src

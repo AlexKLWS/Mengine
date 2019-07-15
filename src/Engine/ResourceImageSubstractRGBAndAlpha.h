@@ -6,31 +6,37 @@
 
 namespace Mengine
 {
-	class ResourceImageSubstractRGBAndAlpha
-		: public ResourceImage
-	{
-		DECLARE_VISITABLE( ResourceImage );
+    class ResourceImageSubstractRGBAndAlpha
+        : public ResourceImage
+    {
+        DECLARE_VISITABLE( ResourceImage );
 
-	public:
-		ResourceImageSubstractRGBAndAlpha();
+    public:
+        ResourceImageSubstractRGBAndAlpha();
         ~ResourceImageSubstractRGBAndAlpha() override;
 
-	public:
+    public:
+        void setResourceImageRGBName( const ConstString & _resourceImageRGBName );
         const ConstString & getResourceRGBName() const;
-		const ConstString & getResourceAlphaName() const;
 
-	protected:
-		bool _loader( const Metabuf::Metadata * _parser ) override;
+        void setResourceImageAlphaName( const ConstString & _resourceImageAlphaName );
+        const ConstString & getResourceAlphaName() const;
 
-	protected:
-		bool _compile() override;
-		void _release() override;
+    protected:
+        bool _compile() override;
+        void _release() override;
 
-	protected:
-		ConstString m_resourceImageRGBName;
-		ResourceImagePtr m_resourceImageRGB;
+    public:
+        void correctUVTexture();
 
-		ConstString m_resourceImageAlphaName;
-		ResourceImagePtr m_resourceImageAlpha;
-	};
+    protected:
+        ConstString m_resourceImageRGBName;
+        ResourceImagePtr m_resourceImageRGB;
+
+        ConstString m_resourceImageAlphaName;
+        ResourceImagePtr m_resourceImageAlpha;
+    };
+    //////////////////////////////////////////////////////////////////////////
+    typedef IntrusivePtr<ResourceImageSubstractRGBAndAlpha> ResourceImageSubstractRGBAndAlphaPtr;
+    //////////////////////////////////////////////////////////////////////////
 }

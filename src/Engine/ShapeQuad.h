@@ -1,18 +1,17 @@
 #pragma once
 
 #include "Kernel/Shape.h"
-#include "Core/RenderVertex2D.h"
+#include "Kernel/RenderVertex2D.h"
 
 namespace Mengine
 {
-    //////////////////////////////////////////////////////////////////////////
     class ShapeQuad
         : public Shape
     {
     public:
         ShapeQuad();
         ~ShapeQuad() override;
-		
+
     protected:
         virtual void updateVerticesLocal() const = 0;
 
@@ -21,20 +20,20 @@ namespace Mengine
         virtual void updateVerticesColor() const;
 
     protected:
-        void _render( RenderServiceInterface * _renderService, const RenderContext * _state ) override;
+        void render( const RenderContext * _context ) const override;
 
     protected:
-        void _updateBoundingBox( mt::box2f & _boundingBox ) const override;
+        void _updateBoundingBox( mt::box2f & _boundingBox, mt::box2f ** _boundingBoxCurrent ) const override;
 
     protected:
-        inline const RenderVertex2D * getVerticesWM() const;
+        MENGINE_INLINE const RenderVertex2D * getVerticesWM() const;
 
-	protected:
+    protected:
         mutable mt::vec2f m_verticesLocal[4];
         mutable RenderVertex2D m_verticesWM[4];
     };
     //////////////////////////////////////////////////////////////////////////
-    inline const RenderVertex2D * ShapeQuad::getVerticesWM() const
+    MENGINE_INLINE const RenderVertex2D * ShapeQuad::getVerticesWM() const
     {
         if( m_invalidateVerticesLocal == true )
         {

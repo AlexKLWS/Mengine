@@ -1,39 +1,44 @@
 #pragma once
 
 #include "Kernel/Node.h"
+#include "Kernel/BaseUpdation.h"
 
 #include "Kernel/RenderCameraOrthogonal.h"
 
 namespace Mengine
 {
-	class RenderCameraOrthogonalTarget
-		: public Node
-	{
-	public:
-		RenderCameraOrthogonalTarget();
-		~RenderCameraOrthogonalTarget() override;
+    class RenderCameraOrthogonalTarget
+        : public Node
+        , public BaseUpdation
+    {
+        DECLARE_VISITABLE( Node );
+        DECLARE_UPDATABLE();
 
-	public:
-		void setRenderCameraOrthogonal( RenderCameraOrthogonal * _camera );
-		RenderCameraOrthogonal * getRenderCameraOrthogonal() const;
+    public:
+        RenderCameraOrthogonalTarget();
+        ~RenderCameraOrthogonalTarget() override;
 
-	public:
-		void setSpeed( float _speed );
-		float getSpeed() const;
+    public:
+        void setRenderCameraOrthogonal( RenderCameraOrthogonal * _camera );
+        RenderCameraOrthogonal * getRenderCameraOrthogonal() const;
 
-	public:
-		void setFixedHorizont( float _horizont );
-		float getFixedHorizont() const;
-		bool isFixedHorizont() const;
+    public:
+        void setSpeed( float _speed );
+        float getSpeed() const;
 
-	public:
-		void _update( float _current, float _timing ) override;
+    public:
+        void setFixedHorizont( float _horizont );
+        float getFixedHorizont() const;
+        bool isFixedHorizont() const;
 
-	protected:
-		RenderCameraOrthogonal * m_camera;
-		float m_speed;
+    public:
+        void update( const UpdateContext * _context ) override;
 
-		bool m_fixedHorizont;
-		float m_horizont;
-	};	
+    protected:
+        RenderCameraOrthogonal * m_camera;
+        float m_speed;
+
+        bool m_fixedHorizont;
+        float m_horizont;
+    };
 }

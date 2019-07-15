@@ -15,8 +15,6 @@ set( HAVE_FSYNC 0 )
 set( HAVE_WAIT3 0 )
 set( HAVE_WAIT4 0 )
 set( HAVE_DEVICE_MACROS 0 )
-
-file(MAKE_DIRECTORY ${python32_BINARY_DIR}/Modules)
                  
 set(MODULE_SRCS 
                 ${SOURCE_DIR}/Modules/_decimal/_decimal.c
@@ -40,11 +38,11 @@ include_directories(${SOURCE_DIR})
 include_directories(${SOURCE_DIR}/Include)
 include_directories(${SOURCE_DIR}/Modules/_decimal/libmpdec)
 
-if( MENGINE_PLATFORM_WIN32 )
+if(MENGINE_ARCHITECTURE_X86)
     add_definitions(-DCONFIG_32)
 endif()
 
-if( MENGINE_PLATFORM_WIN64 )
+if(MENGINE_ARCHITECTURE_X64)
     add_definitions(-DCONFIG_64)
 endif()
 

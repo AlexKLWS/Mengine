@@ -2,8 +2,6 @@
 
 #include "Interface/ServantInterface.h"
 
-#include <stdint.h>
-
 namespace Mengine
 {
     //////////////////////////////////////////////////////////////////////////

@@ -1,37 +1,39 @@
 #include "Layer2D.h"
 
-#include "Kernel/RenderCameraOrthogonal.h"
-
-#include "Kernel/Scene.h"
-
-#include "Kernel/RenderViewport.h"
-
-#include "Interface/NodeInterface.h"
+#include "Interface/PrototypeServiceInterface.h"
+#include "Interface/StringizeServiceInterface.h"
 #include "Interface/RenderSystemInterface.h"
 
-#include "Logger/Logger.h"
+#include "Kernel/RenderCameraOrthogonal.h"
+#include "Kernel/Scene.h"
+#include "Kernel/RenderViewport.h"
+#include "Kernel/Logger.h"
+#include "Kernel/Document.h"
+#include "Kernel/AssertionMemoryPanic.h"
 
 namespace Mengine
 {
-	//////////////////////////////////////////////////////////////////////////
-	Layer2D::Layer2D()
+    //////////////////////////////////////////////////////////////////////////
+    Layer2D::Layer2D()
         : m_size( 0.f, 0.f )
         , m_viewport( 0.f, 0.f, 0.f, 0.f )
-        , m_renderCamera( nullptr )
-        , m_renderViewport( nullptr )
         , m_invalidateVerticesImageMaskColor( true )
         , m_invalidateVerticesImageMaskWM( true )
         , m_hasViewport( false )
         , m_hasImageMask( false )
-	{
-	}
-	//////////////////////////////////////////////////////////////////////////
-	bool Layer2D::_activate()
-	{
-		if( Layer::_activate() == false )
-		{
-			return false;
-		}
+    {
+    }
+    //////////////////////////////////////////////////////////////////////////
+    Layer2D::~Layer2D()
+    {
+    }
+    //////////////////////////////////////////////////////////////////////////
+    bool Layer2D::_activate()
+    {
+        if( Layer::_activate() == false )
+        {
+            return false;
+        }
 
         if( m_hasViewport == true )
         {
@@ -46,8 +48,8 @@ namespace Mengine
             }
         }
 
-		return true;
-	}
+        return true;
+    }
     //////////////////////////////////////////////////////////////////////////
     void Layer2D::_deactivate()
     {
@@ -73,71 +75,63 @@ namespace Mengine
     {
         return m_size;
     }
-	//////////////////////////////////////////////////////////////////////////
-	void Layer2D::setViewport( const Viewport & _viewport )
-	{
+    //////////////////////////////////////////////////////////////////////////
+    void Layer2D::setViewport( const Viewport & _viewport )
+    {
         if( m_hasViewport == true )
         {
             return;
         }
 
-		m_viewport = _viewport;
-		
-		m_hasViewport = true;
+        m_viewport = _viewport;
+
+        m_hasViewport = true;
 
         this->createViewport_();
-	}
+    }
     //////////////////////////////////////////////////////////////////////////
     void Layer2D::createViewport_()
     {
-		if( m_renderCamera == nullptr )
-		{
-			m_renderCamera = NODE_SERVICE() 
-				->createNode( STRINGIZE_STRING_LOCAL( "RenderCameraOrthogonal" ) );
+        if( m_renderCamera == nullptr )
+        {
+            m_renderCamera = PROTOTYPE_SERVICE()
+                ->generatePrototype( STRINGIZE_STRING_LOCAL( "Node" ), STRINGIZE_STRING_LOCAL( "RenderCameraOrthogonal" ), MENGINE_DOCUMENT_FUNCTION );
 
-			if( m_renderCamera == nullptr )
-			{
-				LOGGER_ERROR("Layer2D::createRenderViewport_ %s invalid create Camera2D"
-					, this->getName().c_str()
-					);
+            MENGINE_ASSERTION_MEMORY_PANIC_VOID( m_renderCamera, "name '%s' invalid create Camera2D"
+                , this->getName().c_str()
+            );
 
-				return;
-			}
+            this->addChild( m_renderCamera );
+        }
 
-			this->addChild( m_renderCamera );
-		}
+        if( m_renderViewport == nullptr )
+        {
+            m_renderViewport = PROTOTYPE_SERVICE()
+                ->generatePrototype( STRINGIZE_STRING_LOCAL( "Node" ), STRINGIZE_STRING_LOCAL( "RenderViewport" ), MENGINE_DOCUMENT_FUNCTION );
 
-		if( m_renderViewport == nullptr )
-		{
-			m_renderViewport = NODE_SERVICE() 
-				->createNode( STRINGIZE_STRING_LOCAL( "RenderViewport" ) );
+            MENGINE_ASSERTION_MEMORY_PANIC_VOID( m_renderViewport, "name '%s' invalid create RenderViewport"
+                , this->getName().c_str()
+            );
 
-			if( m_renderViewport == nullptr )
-			{
-				LOGGER_ERROR("Layer2D::createRenderViewport_ %s invalid create RenderViewport"
-					, this->getName().c_str()
-					);
+            this->addChild( m_renderViewport );
+        }
 
-				return;
-			}
-
-			this->addChild( m_renderViewport );
-		}
-
-		m_renderCamera->setProxyViewMatrix( true );
-		m_renderCamera->setOrthogonalViewport( m_viewport );
+        m_renderCamera->setProxyViewMatrix( true );
+        m_renderCamera->setOrthogonalViewport( m_viewport );
         m_renderViewport->setViewport( m_viewport );
-				
-		Node::setRenderCamera( m_renderCamera );
-		Node::setRenderViewport( m_renderViewport );
+
+        RenderInterface * render = this->getRender();
+
+        render->setRenderCamera( m_renderCamera );
+        render->setRenderViewport( m_renderViewport );
     }
-	//////////////////////////////////////////////////////////////////////////
-	void Layer2D::removeViewport()
-	{
-		if( m_hasViewport == false )
-		{
-			return;
-		}
+    //////////////////////////////////////////////////////////////////////////
+    void Layer2D::removeViewport()
+    {
+        if( m_hasViewport == false )
+        {
+            return;
+        }
 
         m_hasViewport = false;
 
@@ -145,24 +139,30 @@ namespace Mengine
     }
     //////////////////////////////////////////////////////////////////////////
     void Layer2D::clearViewport_()
-    {	
+    {
         m_renderViewport = nullptr;
-		m_renderCamera = nullptr;
+        m_renderCamera = nullptr;
 
-		Node::setRenderCamera( nullptr );
-		Node::setRenderViewport( nullptr );
-	}
+        RenderInterface * render = this->getRender();
+
+        render->setRenderCamera( nullptr );
+        render->setRenderViewport( nullptr );
+    }
     //////////////////////////////////////////////////////////////////////////
     bool Layer2D::setImageMask( const ResourceImagePtr & _resourceImageMask )
     {
-        m_resourceImageMask = _resourceImageMask;
+        MENGINE_ASSERTION_MEMORY_PANIC( _resourceImageMask, false, "image mask is null" );
 
-        m_hasImageMask = true;
+        m_resourceImageMask = _resourceImageMask;
 
         if( this->createRenderTarget_() == false )
         {
+            LOGGER_ERROR( "invalid create render target" );
+
             return false;
         }
+
+        m_hasImageMask = true;
 
         return true;
     }
@@ -179,60 +179,96 @@ namespace Mengine
         this->clearRenderTarget_();
     }
     //////////////////////////////////////////////////////////////////////////
+    namespace
+    {
+        class RenderLayer2DTarget
+            : public Factorable
+            , public BaseRender
+        {
+        public:
+            RenderLayer2DTarget( Layer2D * _layer )
+                : m_layer( _layer )
+            {
+            }
+
+            ~RenderLayer2DTarget() override
+            {
+            }
+
+        protected:
+            void render( const RenderContext * _context ) const override
+            {
+                const RenderVertex2D * verticesImageMask = m_layer->getVerticesImageMaskWM();
+                const RenderMaterialInterfacePtr & materialImageMask = m_layer->getMaterialImageMask();
+
+                const mt::box2f * bb = m_layer->getBoundingBox();
+
+                this->addRenderQuad( _context, materialImageMask, verticesImageMask, 4, bb, false );
+            }
+
+        protected:
+            Layer2D * m_layer;
+        };
+    }
+    //////////////////////////////////////////////////////////////////////////
     bool Layer2D::createRenderTarget_()
     {
-        if( m_resourceImageMask == nullptr )
-        {
-            return true;
-        }
-
         RenderTargetInterfacePtr renderTarget = RENDER_SYSTEM()
-            ->createRenderTargetTexture( (uint32_t)m_size.x, (uint32_t)m_size.y, 3, PF_A8R8G8B8 );
+            ->createRenderTargetTexture( (uint32_t)m_size.x, (uint32_t)m_size.y, 3, PF_A8R8G8B8, MENGINE_DOCUMENT_FUNCTION );
 
-        if( renderTarget == nullptr )
-        {
-            return false;
-        }
+        MENGINE_ASSERTION_MEMORY_PANIC( renderTarget, false, "invalid create render target texture [%f, %f]"
+            , m_size.x
+            , m_size.y
+        );
 
-        Node::setRenderTarget( renderTarget );
+        RenderInterface * render = this->getRender();
+        render->setRenderTarget( renderTarget );
 
         RenderImageInterfacePtr renderTargetImage = RENDER_SYSTEM()
-            ->createRenderTargetImage( renderTarget );
+            ->createRenderTargetImage( renderTarget, MENGINE_DOCUMENT_FUNCTION );
 
-        if( renderTargetImage == nullptr )
-        {
-            return false;
-        }
-        
+        MENGINE_ASSERTION_MEMORY_PANIC( renderTargetImage, false, "invalid create render target image" );
+
         RenderTextureInterfacePtr renderTargetTexture = RENDERTEXTURE_SERVICE()
-            ->createRenderTexture( renderTargetImage, (uint32_t)m_size.x, (uint32_t)m_size.y );
+            ->createRenderTexture( renderTargetImage, (uint32_t)m_size.x, (uint32_t)m_size.y, MENGINE_DOCUMENT_FUNCTION );
 
-        if( m_resourceImageMask.compile() == false )
+        MENGINE_ASSERTION_MEMORY_PANIC( renderTargetTexture, false, "invalid create render texture [%f, %f]"
+            , m_size.x
+            , m_size.y
+        );
+
+        if( m_resourceImageMask->compile() == false )
         {
+            LOGGER_ERROR( "'%s' invalid compile resource image mask '%s'"
+                , this->getName().c_str()
+                , m_resourceImageMask->getName().c_str()
+            );
+
             return false;
         }
 
         const RenderTextureInterfacePtr & renderTargetTextureMask = m_resourceImageMask->getTexture();
 
+        mt::uv4f uvs[2];
+        //uvs[0] - Default
+        //uvs[1] = m_resourceImageMask->getUVTextureImage();
+
         RenderTextureInterfacePtr texures[2];
         texures[0] = renderTargetTexture;
         texures[1] = renderTargetTextureMask;
 
-        RenderMaterialInterfacePtr material = RENDERMATERIAL_SERVICE()
-            ->getMaterial3( EM_TEXTURE_ALPHAMASK_BLEND, PT_TRIANGLELIST, 2, texures );
+        const RenderMaterialInterfacePtr & material = RENDERMATERIAL_SERVICE()
+            ->getMaterial3( EM_TEXTURE_ALPHAMASK_BLEND, PT_TRIANGLELIST, 2, uvs, texures, MENGINE_DOCUMENT_FUNCTION );
 
-        if( material == nullptr )
-        {
-            return false;
-        }
-        
+        MENGINE_ASSERTION_MEMORY_PANIC( material, false, "invalid get material" );
+
         m_materialImageMask = material;
-        
-        float hwWidth = (float)renderTarget->getHWWidth();
-        float hwHeight = (float)renderTarget->getHWHeight();
 
-        float uv_width = m_size.x / hwWidth;
-        float uv_height = m_size.y / hwHeight;
+        float hwWidthInv = renderTarget->getHWWidthInv();
+        float hwHeightInv = renderTarget->getHWHeightInv();
+
+        float uv_width = m_size.x * hwWidthInv;
+        float uv_height = m_size.y * hwHeightInv;
 
         m_verticesImageMaskWM[0].uv[0] = mt::vec2f( 0.f, 0.f );
         m_verticesImageMaskWM[1].uv[0] = mt::vec2f( uv_width, 0.f );
@@ -246,6 +282,8 @@ namespace Mengine
         m_verticesImageMaskWM[2].uv[1] = uv_mask.p2;
         m_verticesImageMaskWM[3].uv[1] = uv_mask.p3;
 
+        m_renderTarget = Helper::makeFactorableUnique<RenderLayer2DTarget>( this );
+
         return true;
     }
     //////////////////////////////////////////////////////////////////////////
@@ -253,20 +291,18 @@ namespace Mengine
     {
         m_materialImageMask = nullptr;
 
-        m_resourceImageMask.release();
-        m_resourceImageMask = nullptr;
+        m_resourceImageMask->release();
+
+        m_renderTarget = nullptr;
 
         this->setRenderTarget( nullptr );
     }
     //////////////////////////////////////////////////////////////////////////
-    void Layer2D::_renderTarget( RenderServiceInterface * _renderService, const RenderContext * _state )
-    {        
-        const RenderVertex2D * verticesImageMask = this->getVerticesImageMaskWM();
-        
-        const mt::box2f & bb = this->getBoundingBox();
+    const RenderInterfacePtr & Layer2D::makeTargetRender( const RenderContext * _context ) const
+    {
+        MENGINE_UNUSED( _context );
 
-        _renderService
-            ->addRenderQuad( _state, m_materialImageMask, verticesImageMask, 4, &bb, false );
+        return m_renderTarget;
     }
     //////////////////////////////////////////////////////////////////////////
     void Layer2D::updateVerticesImageMaskWM() const
@@ -281,7 +317,7 @@ namespace Mengine
     //////////////////////////////////////////////////////////////////////////
     void Layer2D::updateVerticesImageMaskColor() const
     {
-        ColourValue color;
+        Color color;
         this->calcTotalColor( color );
 
         uint32_t argb = color.getAsARGB();
@@ -294,8 +330,6 @@ namespace Mengine
     //////////////////////////////////////////////////////////////////////////
     void Layer2D::_invalidateColor()
     {
-        Node::_invalidateColor();
-
         m_invalidateVerticesImageMaskColor = true;
     }
     //////////////////////////////////////////////////////////////////////////
@@ -304,5 +338,19 @@ namespace Mengine
         Node::_invalidateWorldMatrix();
 
         m_invalidateVerticesImageMaskWM = true;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    const RenderViewportInterfacePtr & Layer2D::getPickerViewport() const
+    {
+        const RenderViewportInterfacePtr & viewport = this->getRenderViewport();
+
+        return viewport;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    const RenderCameraInterfacePtr & Layer2D::getPickerCamera() const
+    {
+        const RenderCameraInterfacePtr & camera = this->getRenderCamera();
+
+        return camera;
     }
 }

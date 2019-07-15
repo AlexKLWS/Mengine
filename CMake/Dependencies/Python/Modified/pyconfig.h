@@ -86,9 +86,6 @@ we just silence the warnings. */
 #	define PYTHONPATH ".\\DLLs;.\\lib;.\\lib\\plat-win;.\\lib\\lib-tk"
 #endif
 
-#undef NT_THREADS
-#undef WITH_THREAD
-
 #ifndef NETSCAPE_PI
 #define USE_SOCKET
 #endif
@@ -309,7 +306,7 @@ typedef int pid_t;
 /* End of compilers - finish up */
 
 #ifndef NO_STDIO_H
-#	include <stdio.h>
+#include <stdio.h>
 #endif
 
 /* 64 bit ints are usually spelt __int64 unless compiler has overridden */
@@ -496,7 +493,7 @@ Usually this is either `int' or `gid_t'.  */
 
 /* Define if you don't have tm_zone but do have the external array
 tzname.  */
-#define HAVE_TZNAME
+#undef HAVE_TZNAME
 
 /* Define to `int' if <sys/types.h> doesn't define.  */
 /* #undef mode_t */
@@ -569,6 +566,10 @@ and (consequently) setpgrp() as setpgrp(0, 0). */
 /* Define if you want to compile in rudimentary thread support */
 #undef WITH_THREAD
 
+#if defined(WIN32) && !defined(NDEBUG)
+#   define NT_THREADS
+#endif
+
 /* Define if you want to use the GNU readline library */
 /* #define WITH_READLINE 1 */
 
@@ -582,7 +583,6 @@ and (consequently) setpgrp() as setpgrp(0, 0). */
 
 /* Use Python's own small-block memory-allocator. */
 #define WITH_PYMALLOC
-//#undef WITH_PYMALLOC
 
 /* Define if you have clock.  */
 /* #define HAVE_CLOCK */

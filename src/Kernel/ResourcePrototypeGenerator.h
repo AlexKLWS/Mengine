@@ -3,41 +3,34 @@
 #include "ScriptablePrototypeGenerator.h"
 
 #include "Kernel/Resource.h"
-
-#include "Core/ConstString.h"
-#include "Factory/FactoryPool.h"
-
-#include "Logger/Logger.h"
+#include "Kernel/AssertionMemoryPanic.h"
+#include "Kernel/Logger.h"
 
 namespace Mengine
 {
-	template<class Type, uint32_t Count>
-	class ResourcePrototypeGenerator
-		: public ScriptablePrototypeGenerator<Type, Count>
-	{
-	protected:
-		PointerFactorable generate() override
-		{
+    template<class Type, uint32_t Count>
+    class ResourcePrototypeGenerator
+        : public ScriptablePrototypeGenerator<Type, Count>
+    {
+    protected:
+        FactorablePointer generate( const Char * _doc ) override
+        {
             const FactoryPtr & factory = this->getFactory();
 
-			ResourcePtr resource = factory->createObject();
+            ResourcePtr resource = factory->createObject( _doc );
 
-			if( resource == nullptr )
-			{
-				LOGGER_ERROR("ResourcePrototypeGenerator can't generate %s %s"
-					, this->getCategory().c_str()
-					, this->getPrototype().c_str()
-					);
-
-				return nullptr;
-			}
+            MENGINE_ASSERTION_MEMORY_PANIC( resource, nullptr, "can't generate '%s' '%s' doc '%s'"
+                , this->getCategory().c_str()
+                , this->getPrototype().c_str()
+                , _doc
+            );
 
             const ConstString & prototype = this->getPrototype();
-			resource->setType( prototype );
+            resource->setType( prototype );
 
             this->setupScriptable( resource );
 
-			return resource;
-		}
-	};
+            return resource;
+        }
+    };
 }

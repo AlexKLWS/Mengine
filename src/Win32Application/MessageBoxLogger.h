@@ -1,18 +1,17 @@
 #pragma once
 
-#include "Core/ServantBase.h"
-#include "Core/LoggerBase.h"
+#include "Kernel/LoggerBase.h"
 
 namespace Mengine
 {
-	class MessageBoxLogger
-		: public LoggerBase
-	{
-	public:
-		MessageBoxLogger();
-		~MessageBoxLogger() override;
+    class MessageBoxLogger
+        : public LoggerBase
+    {
+    public:
+        MessageBoxLogger();
+        ~MessageBoxLogger() override;
 
-	public:
-		void log( EMessageLevel _level, uint32_t _flag, const Char * _data, uint32_t _count ) override;
-	};
+    public:
+        void log( EMessageLevel _level, uint32_t _flag, const Char * _data, uint32_t _count ) override;
+    };
 }

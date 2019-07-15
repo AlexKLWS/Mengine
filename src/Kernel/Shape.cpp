@@ -1,16 +1,16 @@
 #include "Shape.h"
 
 #include "Kernel/Surface.h"
-
-#include "Logger/Logger.h"
+#include "Kernel/Logger.h"
+#include "Kernel/AssertionMemoryPanic.h"
 
 namespace Mengine
 {
     //////////////////////////////////////////////////////////////////////////
     Shape::Shape()
-		: m_invalidateVerticesLocal( true )
-		, m_invalidateVerticesWM( true )
-		, m_invalidateVerticesColor( true )
+        : m_invalidateVerticesLocal( true )
+        , m_invalidateVerticesWM( true )
+        , m_invalidateVerticesColor( true )
     {
     }
     //////////////////////////////////////////////////////////////////////////
@@ -25,9 +25,7 @@ namespace Mengine
             return;
         }
 
-        m_surface = _surface;
-
-        this->recompile();
+        this->recompile( [this, _surface]() {m_surface = _surface; } );
     }
     //////////////////////////////////////////////////////////////////////////
     const SurfacePtr & Shape::getSurface() const
@@ -37,21 +35,16 @@ namespace Mengine
     //////////////////////////////////////////////////////////////////////////
     bool Shape::_compile()
     {
-        if( m_surface == nullptr )
-        {
-            LOGGER_ERROR("Shape::_compile '%s' can`t setup surface"
-                , this->getName().c_str()
-                );
-
-            return false;
-        }
+        MENGINE_ASSERTION_MEMORY_PANIC( m_surface, false, "'%s' can`t setup surface"
+            , this->getName().c_str()
+        );
 
         if( m_surface->compile() == false )
         {
-            LOGGER_ERROR("Shape::_compile '%s' can`t compile surface '%s'"
+            LOGGER_ERROR( "'%s' can`t compile surface '%s'"
                 , this->getName().c_str()
                 , m_surface->getName().c_str()
-                );
+            );
 
             return false;
         }
@@ -64,14 +57,12 @@ namespace Mengine
     //////////////////////////////////////////////////////////////////////////
     void Shape::_release()
     {
-        Node::_release();
-
         m_surface->release();
     }
     //////////////////////////////////////////////////////////////////////////
-    void Shape::_update( float _current, float _timing )
+    void Shape::update( const UpdateContext * _context )
     {
-        bool invalidate = m_surface->update( _current, _timing );
+        bool invalidate = m_surface->update( _context );
 
         if( invalidate == true )
         {
@@ -98,18 +89,16 @@ namespace Mengine
     {
         m_invalidateVerticesWM = true;
 
-		this->invalidateBoundingBox();
+        this->invalidateBoundingBox();
     }
     //////////////////////////////////////////////////////////////////////////
     void Shape::invalidateVerticesColor()
     {
-        m_invalidateVerticesColor = true;                
+        m_invalidateVerticesColor = true;
     }
     //////////////////////////////////////////////////////////////////////////
     void Shape::_invalidateColor()
     {
-        Node::_invalidateColor();
-
         this->invalidateVerticesColor();
     }
 }

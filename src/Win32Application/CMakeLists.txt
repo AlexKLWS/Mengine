@@ -6,20 +6,14 @@ MessageBoxLogger
     MessageBoxLogger.h
 )
 
-ADD_FILTER(
-CriticalErrorsMonitor
-	CriticalErrorsMonitor.h
-	CriticalErrorsMonitor.cpp
-)
-
-if(MSVC)
+if(MENGINE_TOOLCHAIN_MSVC)
 ADD_FILTER(
 main	
     win32_main.cpp
 )
 endif()
 
-if(MINGW)
+if(MENGINE_TOOLCHAIN_MINGW)
 ADD_FILTER(
 main	
     mingw32_main.cpp
@@ -33,22 +27,20 @@ Win32Application
 	Win32Application.h
 )
 
-add_definitions(-DUNICODE)
-
-if(MINGW)
+if(MENGINE_TOOLCHAIN_MINGW)
     # resource compilation for mingw
     ADD_CUSTOM_COMMAND(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/Win32Application_rc.o
                        COMMAND windres.exe -I${CMAKE_CURRENT_SOURCE_DIR}
                                            -i${CMAKE_CURRENT_SOURCE_DIR}/Win32Application.rc
                                            -o ${CMAKE_CURRENT_BINARY_DIR}/Win32Application_rc.o)
     SET(SRC_FILES ${SRC_FILES} ${CMAKE_CURRENT_BINARY_DIR}/Win32Application_rc.o)
-  else(MINGW)
+endif()
+
+if(MENGINE_TOOLCHAIN_MSVC)
     SET(SRC_FILES ${SRC_FILES} Win32Application.rc)
-  endif(MINGW)
+endif()
 
 INCLUDE_DIRECTORIES( 
-    ${Mengine_SOURCE_DIR}/Utils
-    ${THIRDPARTY_DIR}/pybind/include
     ${THIRDPARTY_DIR}/tinyini/include
     ${THIRDPARTY_DIR}/libmath/include
     )
@@ -64,7 +56,7 @@ foreach(dependency ${APPLICATION_DEPENDENCIES})
 	TARGET_LINK_LIBRARIES( ${MY_LIB_NAME} optimized ${dependency} )
 endforeach(dependency ${APPLICATION_DEPENDENCIES})
 
-TARGET_LINK_LIBRARIES( ${MY_LIB_NAME} ${APPLICATION_LIBS} ) 
+TARGET_LINK_LIBRARIES(${MY_LIB_NAME} ${APPLICATION_LIBS})
 
 if(NOT MSVC)
     TARGET_LINK_LIBRARIES( ${MY_LIB_NAME} libole32.a )
@@ -77,3 +69,5 @@ endif()
 if(MINGW)
 	set_target_properties( ${MY_LIB_NAME} PROPERTIES LINK_FLAGS -Wl,-Map,${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Win32Application.map )
 endif()
+
+ADD_DEPENDENCIES( ${MY_LIB_NAME} ${APPLICATION_DEPENDENCIES} )

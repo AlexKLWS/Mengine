@@ -1,0 +1,2 @@
+LIBRARY		"XmlToBinPlugin"
+EXPORTS 	dllCreatePlugin 	@1

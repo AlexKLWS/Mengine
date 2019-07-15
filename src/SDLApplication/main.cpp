@@ -15,7 +15,7 @@ int main( int argc, char * argv[] )
 
     Mengine::SDLApplication application;
 
-#ifdef NDEBUG
+#ifdef MENGINE_DEBUG
     try
 #endif
     {
@@ -32,7 +32,7 @@ int main( int argc, char * argv[] )
 
         application.finalize();
     }
-#ifdef NDEBUG
+#ifdef MENGINE_DEBUG
     catch( const std::exception & se )
     {
         const char * se_what = se.what();
@@ -40,6 +40,8 @@ int main( int argc, char * argv[] )
         SDL_ShowSimpleMessageBox( SDL_MESSAGEBOX_ERROR, "Mengine exception", se_what, NULL );
     }
 #endif
+
+    stdex_allocator_finalize();
 
     return 0;
 }

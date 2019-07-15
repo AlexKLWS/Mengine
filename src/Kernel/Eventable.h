@@ -1,13 +1,14 @@
 #pragma once
 
-#include "Interface/ServiceInterface.h"
+#include "Interface/EventationInterface.h"
 
-#include "Factory/Factorable.h"
-#include "Kernel/EventReceiver.h"
-#include "Core/ConstString.h"
-#include "Core/Mixin.h"
+#include "Kernel/Factorable.h"
+#include "Kernel/ConstString.h"
+#include "Kernel/Mixin.h"
 
 #include "Config/Vector.h"
+
+#include <type_traits>
 
 namespace Mengine
 {
@@ -16,123 +17,125 @@ namespace Mengine
         : public Mixin
     {
     public:
-        Eventable();
-        ~Eventable() override;
-
-    public:
-        bool registerEventReceiver( uint32_t _event, const EventReceiverPtr & _receiver );
-        void removeEventReceiver( uint32_t _event );
-
-    public:
-        const EventReceiverPtr & getEventReciever( uint32_t _event ) const;
-        bool hasEventReceiver( uint32_t _event ) const;
-
-    public:
-        void removeEvents();
-
-    public:
-        template<class T>
-        T getEventRecieverT( uint32_t _event ) const
+        virtual EventationInterface * getEventation()
         {
-            const EventReceiverPtr & reciever = this->getEventReciever( _event );
-
-            if( reciever == nullptr )
-            {
-                return nullptr;
-            }
-
-            EventReceiver * r = reciever.get();
-
-#ifndef NDEBUG            
-            if( dynamic_cast<T>(r) == nullptr )
-            {
-                throw;
-            }
-#endif
-
-            T t = static_cast<T>(r);
-
-            return t;
-        }
-
-    protected:
-        struct EventReceiverDesc
-        {
-            uint32_t event;
-            EventReceiverPtr receiver;
+            return nullptr;
         };
 
-        typedef Vector<EventReceiverDesc> TVectorEventReceivers;
-        TVectorEventReceivers m_receivers;
-
-        uint64_t m_flag;
-
-    private:
-        class FEventReciver;
+        virtual const EventationInterface * getEventation() const
+        {
+            return nullptr;
+        };
     };
     //////////////////////////////////////////////////////////////////////////
     typedef IntrusivePtr<Eventable> EventablePtr;
     //////////////////////////////////////////////////////////////////////////
     namespace Helper
     {
+        //////////////////////////////////////////////////////////////////////////
         template<class T>
-        static typename T::EventReceiverType * getThisEventRecieverT( T * _self, uint32_t _event )
+        MENGINE_INLINE static bool hasEventableReceiver( const T * _self, uint32_t _event )
         {
-            typedef typename T::EventReceiverType * T_EventReceiverType;
+            const EventationInterface * eventation = _self->getEventation();
 
-            T_EventReceiverType reciever = _self->template getEventRecieverT<T_EventReceiverType>( _event );
+            if( eventation == nullptr )
+            {
+                return false;
+            }
+
+            bool exist = eventation->hasEventReceiver( _event );
+
+            return exist;
+        }
+        //////////////////////////////////////////////////////////////////////////
+        template<class T>
+        MENGINE_INLINE static bool hasEventableReceiver( const IntrusivePtr<T> & _self, uint32_t _event )
+        {
+            EventationInterface * eventation = _self->getEventation();
+
+            if( eventation == nullptr )
+            {
+                return false;
+            }
+
+            bool exist = eventation->hasEventReceiver( _event );
+
+            return exist;
+        }
+        //////////////////////////////////////////////////////////////////////////
+        template<class T, class EventReceiverType = std::conditional_t<std::is_const_v<T>, const typename T::EventReceiverType *, typename T::EventReceiverType *>>
+        static MENGINE_INLINE EventReceiverType getThisEventRecieverT( T * _self, uint32_t _event )
+        {
+            EventationInterface * eventation = _self->getEventation();
+
+            EventReceiverType reciever = eventation->getEventRecieverT<EventReceiverType>( _event );
 
             return reciever;
         }
-
+        //////////////////////////////////////////////////////////////////////////
         template<class T>
-        static typename T::EventReceiverType * getThisEventRecieverT( const IntrusivePtr<T> & _self, uint32_t _event )
+        static MENGINE_INLINE typename T::EventReceiverType * getThisEventRecieverT( const IntrusivePtr<T> & _self, uint32_t _event )
         {
-            typedef typename T::EventReceiverType * T_EventReceiverType;
+            typedef typename T::EventReceiverType * T_EventReceiverTypePtr;
 
-            T_EventReceiverType reciever = _self->template getEventRecieverT<T_EventReceiverType>( _event );
+            EventationInterface * eventation = _self->getEventation();
+
+            T_EventReceiverTypePtr reciever = eventation->getEventRecieverT<T_EventReceiverTypePtr>( _event );
 
             return reciever;
         }
-
+        //////////////////////////////////////////////////////////////////////////
         template<class T>
-        static T * getThisEventReciever( Eventable * _self, uint32_t _event )
+        static MENGINE_INLINE T * getThisEventReciever( Eventable * _self, uint32_t _event )
         {
-            T * reciever = _self->getEventRecieverT<T *>( _event );
+            EventationInterface * eventation = _self->getEventation();
+
+            T * reciever = eventation->getEventRecieverT<T *>( _event );
 
             return reciever;
         }
-
+        //////////////////////////////////////////////////////////////////////////
         template<class T>
-        static T * getThisEventReciever( const EventablePtr & _self, uint32_t _event )
+        static MENGINE_INLINE T * getThisEventReciever( const EventablePtr & _self, uint32_t _event )
         {
-            T * reciever = _self->getEventRecieverT<T>( _event );
+            EventationInterface * eventation = _self->getEventation();
+
+            T * reciever = eventation->getEventRecieverT<T *>( _event );
 
             return reciever;
         }
     }
 }
-
-#   define EVENT_RECEIVER(Type)\
+//////////////////////////////////////////////////////////////////////////
+#define DECLARE_EVENTABLE_TYPE( Type )\
 public:\
-    typedef Type EventReceiverType
-
-#   define EVENTABLE_METHODR(Self, Event, R)\
-    Self == nullptr ? R : Self->hasEventReceiver( Event ) == false ? R : Helper::getThisEventRecieverT( Self, Event )
-
-#   define EVENTABLE_METHOD(Self, Event)\
-    EVENTABLE_METHODR(Self, Event, ((void)0))
-
-#   define EVENTABLE_METHODRS(Self, Event, R)\
-    Self->hasEventReceiver( Event ) == false ? R : Helper::getThisEventRecieverT( Self, Event )
-
-#   define EVENTABLE_METHODRT(Self, Event, R, Type)\
-    Self == nullptr ? R : Self->hasEventReceiver( Event ) == false ? R : Helper::getThisEventReciever<Type>( Self, Event )
-
-#   define EVENTABLE_METHODT(Self, Event, Type)\
-    EVENTABLE_METHODRT(Self, Event, ((void)0), Type)
-
-#   define EVENTABLE_METHODRTS(Self, Event, R, Type)\
-    Self->hasEventReceiver( Event ) == false ? R : Helper::getThisEventReciever<Type>( Self, Event )
-
-
+    typedef Type EventReceiverType;
+//////////////////////////////////////////////////////////////////////////
+#define DECLARE_EVENTABLE( Type )\
+public:\
+    DECLARE_EVENTABLE_TYPE( Type );\
+    Mengine::EventationInterface * getEventation() override{ return this; }\
+    const Mengine::EventationInterface * getEventation() const override{ return this; }\
+protected:
+//////////////////////////////////////////////////////////////////////////
+#define EVENTABLE_METHODR(Event, R)\
+    Helper::hasEventableReceiver( this, Event ) == false ? R : Helper::getThisEventRecieverT( this, Event )
+//////////////////////////////////////////////////////////////////////////
+#define EVENTABLE_METHOD(Event)\
+    EVENTABLE_METHODR(Event, MENGINE_UNUSED(0))
+//////////////////////////////////////////////////////////////////////////
+#define EVENTABLE_OTHER_METHODR(Self, Event, R)\
+    Self == nullptr ? R : Helper::hasEventableReceiver( Self, Event ) == false ? R : Helper::getThisEventRecieverT( Self, Event )
+//////////////////////////////////////////////////////////////////////////
+#define EVENTABLE_OTHER_METHOD(Self, Event)\
+    EVENTABLE_OTHER_METHODR(Self, Event, MENGINE_UNUSED(0))
+//////////////////////////////////////////////////////////////////////////
+#define EVENTABLE_METHODRS(Self, Event, R)\
+    Helper::hasEventableReceiver( Self, Event ) == false ? R : Helper::getThisEventRecieverT( Self, Event )
+//////////////////////////////////////////////////////////////////////////
+#define EVENTABLE_OTHER_METHODRT(Self, Event, R, Type)\
+    Self == nullptr ? R : Helper::hasEventableReceiver( Self, Event ) == false ? R : Helper::getThisEventReciever<Type>( Self, Event )
+//////////////////////////////////////////////////////////////////////////
+#define EVENTABLE_OTHER_METHODT(Self, Event, Type)\
+    EVENTABLE_OTHER_METHODRT(Self, Event, MENGINE_UNUSED(0), Type)
+//////////////////////////////////////////////////////////////////////////

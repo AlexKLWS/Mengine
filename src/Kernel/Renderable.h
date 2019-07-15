@@ -1,65 +1,33 @@
 #pragma once
 
-#include "Core/Viewport.h"
-#include "Core/Mixin.h"
-#include "Core/IntrusivePtr.h"
+#include "Kernel/Mixin.h"
 
 namespace Mengine
 {
-    class RenderServiceInterface;
-    struct RenderContext;
-
-	class Renderable
+    //////////////////////////////////////////////////////////////////////////
+    class RenderInterface;
+    //////////////////////////////////////////////////////////////////////////
+    class Renderable
         : public Mixin
-	{
-	public:
-		Renderable();
-        ~Renderable();
-
-	public:
-		virtual void render( RenderServiceInterface * _renderService, const RenderContext * _state ) = 0;
-
-	public:
-		virtual void _render( RenderServiceInterface * _renderService, const RenderContext * _state );
-		virtual void _debugRender( RenderServiceInterface * _renderService, const RenderContext * _state );
-
-	public:
-		virtual void setHide( bool _hide );
-		inline bool getHide() const;
-
-	public:
-		void setLocalHide( bool _localHide );
-		inline bool getLocalHide() const;
-
+    {
     public:
-        void setExternalRender( bool _externalRender );
-        inline bool getExternalRender() const;
+        virtual RenderInterface * getRender()
+        {
+            return nullptr;
+        }
 
-	protected:
-        virtual void _setHide( bool _hide );
-		virtual void _setLocalHide( bool _localHide );		
-        virtual void _setExternalRender( bool _externalRender );
-		
-	protected:
-		bool m_hide;
-		bool m_localHide;
-        bool m_externalRender;
-	};
+        virtual const RenderInterface * getRenderConst() const
+        {
+            return nullptr;
+        }
+    };
     //////////////////////////////////////////////////////////////////////////
     typedef IntrusivePtr<Renderable> RenderablePtr;
-	//////////////////////////////////////////////////////////////////////////
-	inline bool Renderable::getHide() const
-	{
-		return m_hide;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	inline bool Renderable::getLocalHide() const
-	{
-		return m_localHide;
-	}
     //////////////////////////////////////////////////////////////////////////
-    inline bool Renderable::getExternalRender() const
-    {
-        return m_externalRender;
-    }
 }
+//////////////////////////////////////////////////////////////////////////
+#define DECLARE_RENDERABLE()\
+public:\
+    Mengine::RenderInterface * getRender() override{ return this; }\
+    const Mengine::RenderInterface * getRenderConst() const override{ return this; }\
+protected:

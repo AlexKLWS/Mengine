@@ -2,70 +2,68 @@
 
 #include "Interface/NotificationServiceInterface.h"
 
-#include "Logger/Logger.h"
+#include "Kernel/Logger.h"
 
 namespace Mengine
 {
-	//////////////////////////////////////////////////////////////////////////
-	RenderCamera::RenderCamera()
-		: m_invalidateProjectionMatrix( true )
-		, m_invalidateViewMatrix( true )
-		, m_invalidateViewProjectionMatrix( true )	
-	{
-	}
+    //////////////////////////////////////////////////////////////////////////
+    RenderCamera::RenderCamera()
+        : m_invalidateProjectionMatrix( true )
+        , m_invalidateViewMatrix( true )
+        , m_invalidateViewProjectionMatrix( true )
+    {
+    }
     //////////////////////////////////////////////////////////////////////////
     RenderCamera::~RenderCamera()
     {
     }
-	//////////////////////////////////////////////////////////////////////////
-	bool RenderCamera::_activate()
-	{
+    //////////////////////////////////////////////////////////////////////////
+    bool RenderCamera::_activate()
+    {
         if( Node::_activate() == false )
-		{
-			return true;
-		}
+        {
+            return true;
+        }
 
-		NOTIFICATION_SERVICE()
-			->addObserverMethod( NOTIFICATOR_CHANGE_WINDOW_RESOLUTION, this, &RenderCamera::notifyChangeWindowResolution );
+		NOTIFICATION_ADDOBSERVERMETHOD( NOTIFICATOR_CHANGE_WINDOW_RESOLUTION, this, &RenderCamera::notifyChangeWindowResolution );
 
-		this->invalidateViewMatrix_();
-		this->invalidateProjectionMatrix_();
+        this->invalidateViewMatrix_();
+        this->invalidateProjectionMatrix_();
 
-		return true;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void RenderCamera::_deactivate()
-	{
+        return true;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void RenderCamera::_deactivate()
+    {
         Node::_deactivate();
 
-        NOTIFICATION_SERVICE()
-            ->removeObserver( NOTIFICATOR_CHANGE_WINDOW_RESOLUTION, this );
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void RenderCamera::_invalidateWorldMatrix()
-	{
-		Node::_invalidateWorldMatrix();
+        NOTIFICATION_REMOVEOBSERVER_THIS( NOTIFICATOR_CHANGE_WINDOW_RESOLUTION );
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void RenderCamera::_invalidateWorldMatrix()
+    {
+        Node::_invalidateWorldMatrix();
 
-		this->invalidateViewMatrix_();
-		this->invalidateProjectionMatrix_();
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void RenderCamera::updateViewProjectionMatrix_() const
-	{
-		m_invalidateViewProjectionMatrix = false;
+        this->invalidateViewMatrix_();
+        this->invalidateProjectionMatrix_();
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void RenderCamera::updateViewProjectionMatrix_() const
+    {
+        m_invalidateViewProjectionMatrix = false;
 
-		const mt::mat4f & vm = this->getCameraViewMatrix();
-		const mt::mat4f & pm = this->getCameraProjectionMatrix();
+        const mt::mat4f & vm = this->getCameraViewMatrix();
+        const mt::mat4f & pm = this->getCameraProjectionMatrix();
 
-		mt::mul_m4_m4( m_viewProjectionMatrix, vm, pm );
+        mt::mul_m4_m4( m_viewProjectionMatrix, vm, pm );
         mt::inv_m4_m4( m_viewProjectionMatrixInv, m_viewProjectionMatrix );
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void RenderCamera::notifyChangeWindowResolution( bool _fullscreen, const Resolution & _resolution )
-	{
-        (void)_fullscreen;
-        (void)_resolution;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void RenderCamera::notifyChangeWindowResolution( bool _fullscreen, const Resolution & _resolution )
+    {
+        MENGINE_UNUSED( _fullscreen );
+        MENGINE_UNUSED( _resolution );
 
-		this->invalidateProjectionMatrix_();
-	}
+        this->invalidateProjectionMatrix_();
+    }
 }

@@ -1,0 +1,53 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
+
+OPTION(MENGINE_DOWNLOADS_SILENT "Mengine download silent" OFF)
+
+PROJECT(Downloads)
+
+SET(MENGINE_REPOSITORY ${CMAKE_CURRENT_SOURCE_DIR}/../..)
+SET(THIRDPARTY_DIR ${MENGINE_REPOSITORY}/dependencies)
+
+include(download_template.cmake)
+
+DOWNLOAD_URL_HASH(boost https://dl.bintray.com/boostorg/release/1.70.0/source/boost_1_70_0.7z SHA256 ae2bb1b35d1f238e72e3f819b42336f4bd27c9ed2092aab5d87818ccb0c9161a)
+DOWNLOAD_URL(astralax http://www.astralax.ru/download/programm/dev/magic_win.zip)
+DOWNLOAD_URL(curl-android https://github.com/leenjewel/openssl_for_ios_and_android/releases/download/android_openssl-1.1.0f_curl-7.54.1/only_android_openssl-1.1.0f_curl-7.54.1.zip)
+DOWNLOAD_URL_HASH(openssl https://www.npcglib.org/~stathis/downloads/openssl-1.1.0f-vs2017.7z MD5 b6f8903afb8c61d3c4b93d439142e3b1)
+DOWNLOAD_URL(SDL2 https://www.libsdl.org/release/SDL2-2.0.9.zip)
+
+
+DOWNLOAD_FILE(stb_image https://raw.githubusercontent.com/nothings/stb/master/stb_image.h stb_image.h)
+
+GIT_CLONE(ios-cmake https://github.com/leetal/ios-cmake "2.2.0")
+GIT_CLONE(zlib https://github.com/madler/zlib.git "v1.2.11")
+GIT_CLONE(libogg https://github.com/xiph/ogg.git "v1.3.3")
+GIT_CLONE(libvorbis https://github.com/xiph/vorbis.git "v1.3.6")
+GIT_CLONE(libwebp https://github.com/webmproject/libwebp.git "v1.0.2")
+GIT_CLONE(pugixml https://github.com/zeux/pugixml.git "v1.9")
+GIT_CLONE(pybind https://github.com/irov/pybind.git)
+GIT_CLONE(metabuf https://github.com/irov/metabuf.git)
+GIT_CLONE(stdex https://github.com/irov/stdex.git)
+GIT_CLONE(libmovie https://github.com/irov/libmovie.git)
+GIT_CLONE(utf8 https://github.com/nemtrif/utfcpp.git "v2.3.6")
+GIT_CLONE(lz4 https://github.com/lz4/lz4.git "v1.9.1")
+GIT_CLONE(poly2tri https://github.com/jhasse/poly2tri.git)
+GIT_CLONE(curl https://github.com/curl/curl.git "curl-7_65_1")
+GIT_CLONE(tinyini https://github.com/irov/tinyini.git)
+GIT_CLONE(libfe https://github.com/irov/font-effects-lib.git)
+GIT_CLONE(libmath https://github.com/irov/libmath.git)
+GIT_CLONE(jansson https://github.com/akheron/jansson.git "v2.12")
+GIT_CLONE(jpp https://github.com/irov/jpp.git)
+GIT_CLONE(freetype git://git.sv.nongnu.org/freetype/freetype2.git "VER-2-9-1")
+GIT_CLONE(libpng https://github.com/glennrp/libpng.git "v1.6.36")
+GIT_CLONE(libjpeg https://github.com/winlibs/libjpeg.git "libjpeg-9c")
+GIT_CLONE(libtheora https://github.com/xiph/theora.git "v1.1.1")
+GIT_CLONE(openal-soft https://github.com/kcat/openal-soft.git "openal-soft-1.19.1")
+GIT_CLONE(python https://github.com/python/cpython.git "v2.7.16")
+GIT_CLONE(python3 https://github.com/python/cpython.git "v3.6.8")
+GIT_CLONE(ozz https://github.com/guillaumeblanc/ozz-animation.git "0.10.0")
+GIT_CLONE(glad https://github.com/Dav1dde/glad.git "v0.1.30")
+GIT_CLONE(glfw3 https://github.com/glfw/glfw.git "3.2.1")
+GIT_CLONE(imgui https://github.com/ocornut/imgui.git "v1.69")
+GIT_CLONE(zed_net https://github.com/iOrange/zed_net.git)
+GIT_CLONE(spine https://github.com/EsotericSoftware/spine-runtimes.git "3.7.83")
+

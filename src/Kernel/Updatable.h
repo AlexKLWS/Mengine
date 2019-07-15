@@ -1,21 +1,27 @@
 #pragma once
 
-#include "Core/Mixin.h"
-#include "Core/IntrusivePtr.h"
+#include "Interface/UpdationInterface.h"
+
+#include "Kernel/Mixin.h"
 
 namespace Mengine
 {
     //////////////////////////////////////////////////////////////////////////
-	class Updatable
+    class Updatable
         : public Mixin
-	{
-	public:
-		virtual void update( float _current, float _timing );
-
-	protected:
-		virtual void _update( float _current, float _timing ) = 0;
-	};
+    {
+    public:
+        virtual UpdationInterface * getUpdation()
+        {
+            return nullptr;
+        }
+    };
     //////////////////////////////////////////////////////////////////////////
     typedef IntrusivePtr<Updatable> UpdatablePtr;
     //////////////////////////////////////////////////////////////////////////
 }
+//////////////////////////////////////////////////////////////////////////
+#define DECLARE_UPDATABLE()\
+public:\
+    Mengine::UpdationInterface * getUpdation() override{ return this; }\
+protected:

@@ -1,139 +1,159 @@
 #include "Entity.h"
 
-#include "Interface/NodeInterface.h"
-
-#include "Logger/Logger.h"
+#include "Kernel/Logger.h"
+#include "Kernel/BaseEventation.h"
 
 namespace Mengine
 {
     //////////////////////////////////////////////////////////////////////////
     Entity::Entity()
-		: m_scriptEventable(nullptr)
     {
     }
     //////////////////////////////////////////////////////////////////////////
     Entity::~Entity()
     {
     }
-	//////////////////////////////////////////////////////////////////////////
-	void Entity::setPrototype( const ConstString & _prototype )
-	{
-		m_prototype = _prototype;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	const ConstString & Entity::getPrototype() const
-	{
-		return m_prototype;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void Entity::setScriptEventable( Eventable * _eventable )
-	{
-		m_scriptEventable = _eventable;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	Eventable * Entity::getScriptEventable() const
-	{
-		return m_scriptEventable;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void Entity::setScriptObject( const pybind::object & _object )
-	{
-		m_object = _object;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	const pybind::object & Entity::getScriptObject() const
-	{
-		return m_object;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	bool Entity::_activate()
-	{
-        EVENTABLE_METHODT( m_scriptEventable, EVENT_ENTITY_PREPARATION, EntityEventReceiver )
-            ->onEntityPreparation( m_object );
+    //////////////////////////////////////////////////////////////////////////
+    void Entity::setPrototype( const ConstString & _prototype )
+    {
+        m_prototype = _prototype;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    const ConstString & Entity::getPrototype() const
+    {
+        return m_prototype;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void Entity::setBehaviorEventable( const EventablePtr & _behaviorEventable )
+    {
+        m_behaviorEventable = _behaviorEventable;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    const EventablePtr & Entity::getBehaviorEventable() const
+    {
+        return m_behaviorEventable;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void Entity::setBehavior( const EntityBehaviorInterfacePtr & _behavior )
+    {
+        m_behavior = _behavior;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    const EntityBehaviorInterfacePtr & Entity::getBehavior() const
+    {
+        return m_behavior;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    EventationInterface * Entity::getEventation()
+    {
+        if( m_behaviorEventable == nullptr )
+        {
+            return nullptr;
+        }
 
-		bool successful = Node::_activate();
+        EventationInterface * event = m_behaviorEventable->getEventation();
 
-		return successful;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void Entity::_afterActivate()
-	{
-		Node::_afterActivate();
+        return event;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    const EventationInterface * Entity::getEventation() const
+    {
+        if( m_behaviorEventable == nullptr )
+        {
+            return nullptr;
+        }
 
-        EVENTABLE_METHODT( m_scriptEventable, EVENT_ENTITY_ACTIVATE, EntityEventReceiver )
-            ->onEntityActivate(m_object);
-	}
+        const EventationInterface * event = m_behaviorEventable->getEventation();
+
+        return event;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    bool Entity::_activate()
+    {
+        EVENTABLE_METHOD( EVENT_ENTITY_PREPARATION )
+            ->onEntityPreparation( m_behavior );
+
+        bool successful = Node::_activate();
+
+        return successful;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void Entity::_afterActivate()
+    {
+        Node::_afterActivate();
+
+        EVENTABLE_METHOD( EVENT_ENTITY_ACTIVATE )
+            ->onEntityActivate( m_behavior );
+    }
     //////////////////////////////////////////////////////////////////////////
     void Entity::_deactivate()
     {
-        EVENTABLE_METHODT( m_scriptEventable, EVENT_ENTITY_PREPARATION_DEACTIVATE, EntityEventReceiver )
-            ->onEntityPreparationDeactivate( m_object );
+        EVENTABLE_METHOD( EVENT_ENTITY_PREPARATION_DEACTIVATE )
+            ->onEntityPreparationDeactivate( m_behavior );
 
-        Node::_deactivate();		
+        Node::_deactivate();
     }
-	//////////////////////////////////////////////////////////////////////////
-	void Entity::_afterDeactivate()
-	{
-		Node::_afterDeactivate();
-
-        EVENTABLE_METHODT( m_scriptEventable, EVENT_ENTITY_DEACTIVATE, EntityEventReceiver )
-            ->onEntityDeactivate( m_object );
-	}
-	//////////////////////////////////////////////////////////////////////////
-	bool Entity::_compile()
-	{
-        EVENTABLE_METHODT( m_scriptEventable, EVENT_ENTITY_COMPILE, EntityEventReceiver )
-            ->onEntityCompile( m_object );
-		
-		return true;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void Entity::_release()
-	{
-        EVENTABLE_METHODT( m_scriptEventable, EVENT_ENTITY_RELEASE, EntityEventReceiver )
-            ->onEntityRelease( m_object );
-	}
     //////////////////////////////////////////////////////////////////////////
-    void Entity::_update( float _current, float _timing )
+    void Entity::_afterDeactivate()
     {
-        Node::_update( _current, _timing );
+        Node::_afterDeactivate();
 
-        EVENTABLE_METHODT( m_scriptEventable, EVENT_ENTITY_UPDATE, EntityEventReceiver )
-            ->onEntityUpdate( m_object, _current, _timing );
+        EVENTABLE_METHOD( EVENT_ENTITY_DEACTIVATE )
+            ->onEntityDeactivate( m_behavior );
     }
-	//////////////////////////////////////////////////////////////////////////
-	void Entity::onCreate()
-	{
-        EVENTABLE_METHODT( m_scriptEventable, EVENT_ENTITY_CREATE, EntityEventReceiver )
-            ->onEntityCreate( m_object, this );
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void Entity::_destroy()
-	{
-		this->release();
+    //////////////////////////////////////////////////////////////////////////
+    bool Entity::_compile()
+    {
+        EVENTABLE_METHOD( EVENT_ENTITY_COMPILE )
+            ->onEntityCompile( m_behavior );
 
-		Node * old_parent = this->getParent();
+        return true;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void Entity::_release()
+    {
+        EVENTABLE_METHOD( EVENT_ENTITY_RELEASE )
+            ->onEntityRelease( m_behavior );
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void Entity::onCreate()
+    {
+        EVENTABLE_METHOD( EVENT_ENTITY_CREATE )
+            ->onEntityCreate( m_behavior, this );
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void Entity::onDestroy()
+    {
+        EVENTABLE_METHOD( EVENT_ENTITY_DESTROY )
+            ->onEntityDestroy( m_behavior );
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void Entity::_destroy()
+    {
+        this->release();
 
-        EVENTABLE_METHODT( m_scriptEventable, EVENT_ENTITY_DESTROY, EntityEventReceiver )
-            ->onEntityDestroy( m_object );
-		
-		m_object.reset();
+        Node * old_parent = this->getParent();
 
-		Node * new_parent = this->getParent();
+        EVENTABLE_METHOD( EVENT_ENTITY_DESTROY )
+            ->onEntityDestroy( m_behavior );
 
-		if( old_parent != new_parent )
-		{
-			LOGGER_ERROR("Entity::destroy %s:%s script event EVENT_DESTROY replace node to other hierarchy"
-				, this->getType().c_str()
-				, this->getName().c_str()
-				);
+        m_behavior = nullptr;
 
-			return;
-		}
+        Node * new_parent = this->getParent();
 
-		this->destroyAllChild();
-		this->removeFromParent();
+        if( old_parent != new_parent )
+        {
+            LOGGER_ERROR( "entity %s:%s script event EVENT_DESTROY replace node to other hierarchy"
+                , this->getType().c_str()
+                , this->getName().c_str()
+            );
 
-		this->unwrap();
-	}
+            return;
+        }
+
+        this->removeFromParent();
+        this->destroyChildren( []( const NodePtr & ) {} );        
+
+        this->unwrap();
+    }
 }

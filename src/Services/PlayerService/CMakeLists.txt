@@ -1,0 +1,30 @@
+SET( MY_LIB_NAME PlayerService )
+
+ADD_FILTER(
+src
+	PlayerService.h
+	PlayerService.cpp    
+    PlayerGlobalAffectorable.h
+    PlayerGlobalAffectorable.cpp
+    PlayerGlobalInputHandler.h
+    PlayerGlobalInputHandler.cpp
+)
+
+ADD_MENGINE_LIBRARY()
+
+set_target_properties (${MY_LIB_NAME} PROPERTIES
+    FOLDER Services
+)
+
+INCLUDE_DIRECTORIES( ${THIRDPARTY_DIR}/libmath/include )
+INCLUDE_DIRECTORIES( ${THIRDPARTY_DIR}/pybind/include )
+
+SET( APPLICATION_DEPENDENCIES
+ ${APPLICATION_DEPENDENCIES}
+ ${MY_LIB_NAME}
+)
+
+SET( APPLICATION_DEPENDENCIES
+ ${APPLICATION_DEPENDENCIES}
+ PARENT_SCOPE
+)

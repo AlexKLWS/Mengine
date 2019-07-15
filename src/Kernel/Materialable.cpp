@@ -1,22 +1,22 @@
 #include "Materialable.h"
 
-#include "Interface/RenderSystemInterface.h"
+#include "Interface/RenderMaterialServiceInterface.h"
 
-#include "Logger/Logger.h"
+#include "Kernel/Logger.h"
 #include "Kernel/ResourceImage.h"
 
 namespace Mengine
 {
-	//////////////////////////////////////////////////////////////////////////
-	namespace Helper
-	{
+    //////////////////////////////////////////////////////////////////////////
+    namespace Helper
+    {
         //////////////////////////////////////////////////////////////////////////
-        RenderMaterialInterfacePtr makeSolidMaterial( const ConstString & _materialName, EMaterialBlendMode _blendMode, bool _solid )
+        RenderMaterialInterfacePtr makeSolidMaterial( const ConstString & _materialName, EMaterialBlendMode _blendMode, bool _solid, const Char * _doc )
         {
             if( _materialName.empty() == false )
             {
                 RenderMaterialInterfacePtr material = RENDERMATERIAL_SERVICE()
-                    ->getMaterial( _materialName, PT_TRIANGLELIST, 0, nullptr );
+                    ->getMaterial( _materialName, PT_TRIANGLELIST, 0, nullptr, nullptr, _doc );
 
                 return material;
             }
@@ -51,30 +51,34 @@ namespace Mengine
             }
 
             RenderMaterialInterfacePtr material = RENDERMATERIAL_SERVICE()
-                ->getMaterial3( materialId, PT_TRIANGLELIST, 0, nullptr );
+                ->getMaterial3( materialId, PT_TRIANGLELIST, 0, nullptr, nullptr, _doc );
 
             return material;
         }
         //////////////////////////////////////////////////////////////////////////
-		RenderMaterialInterfacePtr makeImageMaterial( const ResourceImagePtr & _resourceImage, const ConstString & _materialName, EMaterialBlendMode _blendMode, bool _disableTextureColor, bool _solid )
-		{
-			uint32_t texturesNum = 0;
-			RenderTextureInterfacePtr textures[2];
-			
-			bool premultiply = false;
+        RenderMaterialInterfacePtr makeImageMaterial( const ResourceImagePtr & _resourceImage, const ConstString & _materialName, EMaterialBlendMode _blendMode, bool _disableTextureColor, bool _solid, const Char * _doc )
+        {
+            uint32_t texturesNum = 0;
+            RenderTextureInterfacePtr textures[2];
+            mt::uv4f uvs[2];
 
-			if( _resourceImage != nullptr )
-			{
-				textures[0] = _resourceImage->getTexture();
-				textures[1] = _resourceImage->getTextureAlpha();
+            bool premultiply = false;
 
-				premultiply = _resourceImage->isPremultiply();
-			}
-			else
-			{
-				textures[0] = nullptr;
-				textures[1] = nullptr;
-			}
+            if( _resourceImage != nullptr )
+            {
+                uvs[0] = _resourceImage->getUVTextureImage();
+                uvs[1] = _resourceImage->getUVTextureAlpha();
+
+                textures[0] = _resourceImage->getTexture();
+                textures[1] = _resourceImage->getTextureAlpha();
+
+                premultiply = _resourceImage->isPremultiply();
+            }
+            else
+            {
+                textures[0] = nullptr;
+                textures[1] = nullptr;
+            }
 
             if( _materialName.empty() == false )
             {
@@ -88,7 +92,7 @@ namespace Mengine
                 }
 
                 RenderMaterialInterfacePtr material = RENDERMATERIAL_SERVICE()
-                    ->getMaterial( _materialName, PT_TRIANGLELIST, texturesNum, textures );
+                    ->getMaterial( _materialName, PT_TRIANGLELIST, texturesNum, uvs, textures, _doc );
 
                 return material;
             }
@@ -133,7 +137,7 @@ namespace Mengine
                         {
                             materialId = EM_TEXTURE_SCREEN_EXTERNAL_ALPHA;
                         }
-                    }
+                    }break;
                 case EMB_MULTIPLY:
                     {
                         if( _disableTextureColor == true )
@@ -144,7 +148,7 @@ namespace Mengine
                         {
                             materialId = EM_TEXTURE_MULTIPLY_EXTERNAL_ALPHA;
                         }
-                    }
+                    }break;
                 default:
                     break;
                 }
@@ -253,9 +257,9 @@ namespace Mengine
                     {
                         if( _resourceImage != nullptr )
                         {
-                            const ColourValue & colour = _resourceImage->getColor();
+                            const Color & color = _resourceImage->getColor();
 
-                            if( colour.isSolid() == false || _solid == false )
+                            if( color.isSolid() == false || _solid == false )
                             {
                                 materialId = EM_COLOR_BLEND;
                             }
@@ -291,18 +295,18 @@ namespace Mengine
                 }
             }
 
-			RenderMaterialInterfacePtr material = RENDERMATERIAL_SERVICE()
-				->getMaterial3( materialId, PT_TRIANGLELIST, texturesNum, textures );
+            RenderMaterialInterfacePtr material = RENDERMATERIAL_SERVICE()
+                ->getMaterial3( materialId, PT_TRIANGLELIST, texturesNum, uvs, textures, _doc );
 
-			return material;
-		}
-		//////////////////////////////////////////////////////////////////////////
-		RenderMaterialInterfacePtr makeTextureMaterial( const RenderTextureInterfacePtr * _textures, uint32_t _textureCount, const ConstString & _materialName, EMaterialBlendMode _blendMode, bool _premultiply, bool _disableTextureColor, bool _solid )
-		{
+            return material;
+        }
+        //////////////////////////////////////////////////////////////////////////
+        RenderMaterialInterfacePtr makeTextureMaterial( const ConstString & _materialName, uint32_t _textureCount, const mt::uv4f * _uvs, const RenderTextureInterfacePtr * _textures, EMaterialBlendMode _blendMode, bool _premultiply, bool _disableTextureColor, bool _solid, const Char * _doc )
+        {
             if( _materialName.empty() == false )
             {
                 RenderMaterialInterfacePtr material = RENDERMATERIAL_SERVICE()
-                    ->getMaterial( _materialName, PT_TRIANGLELIST, _textureCount, _textures );
+                    ->getMaterial( _materialName, PT_TRIANGLELIST, _textureCount, _uvs, _textures, _doc );
 
                 return material;
             }
@@ -345,7 +349,7 @@ namespace Mengine
                         {
                             materialId = EM_TEXTURE_SCREEN_EXTERNAL_ALPHA;
                         }
-                    }
+                    }break;
                 case EMB_MULTIPLY:
                     {
                         if( _disableTextureColor == true )
@@ -356,7 +360,7 @@ namespace Mengine
                         {
                             materialId = EM_TEXTURE_MULTIPLY_EXTERNAL_ALPHA;
                         }
-                    }
+                    }break;
                 default:
                     break;
                 }
@@ -477,47 +481,47 @@ namespace Mengine
             }
 
             RenderMaterialInterfacePtr material = RENDERMATERIAL_SERVICE()
-                ->getMaterial3( materialId, PT_TRIANGLELIST, _textureCount, _textures );
+                ->getMaterial3( materialId, PT_TRIANGLELIST, _textureCount, _uvs, _textures, _doc );
 
-			return material;
-		}
-	}
-	//////////////////////////////////////////////////////////////////////////
-	Materialable::Materialable()
-		: m_blendMode( EMB_NORMAL )
+            return material;
+        }
+    }
+    //////////////////////////////////////////////////////////////////////////
+    Materialable::Materialable()
+        : m_blendMode( EMB_NORMAL )
         , m_premultiplyAlpha( false )
-		, m_disableTextureColor( false )
-		, m_invalidateMaterial( true )
-	{
-	}
-	//////////////////////////////////////////////////////////////////////////
-	Materialable::~Materialable()
-	{
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void Materialable::setMaterialName( const ConstString & _materialName )
-	{
-		m_materialName = _materialName;
+        , m_disableTextureColor( false )
+        , m_invalidateMaterial( true )
+    {
+    }
+    //////////////////////////////////////////////////////////////////////////
+    Materialable::~Materialable()
+    {
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void Materialable::setMaterialName( const ConstString & _materialName )
+    {
+        m_materialName = _materialName;
 
-		this->invalidateMaterial();
-	}
-	//////////////////////////////////////////////////////////////////////////
-	const ConstString & Materialable::getMaterialName() const
-	{
-		return m_materialName;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void Materialable::setDisableTextureColor( bool _disable )
-	{
-		m_disableTextureColor = _disable;
+        this->invalidateMaterial();
+    }
+    //////////////////////////////////////////////////////////////////////////
+    const ConstString & Materialable::getMaterialName() const
+    {
+        return m_materialName;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void Materialable::setDisableTextureColor( bool _disable )
+    {
+        m_disableTextureColor = _disable;
 
-		this->invalidateMaterial();
-	}
-	//////////////////////////////////////////////////////////////////////////
-	bool Materialable::getDisableTextureColor() const
-	{
-		return m_disableTextureColor;
-	}
+        this->invalidateMaterial();
+    }
+    //////////////////////////////////////////////////////////////////////////
+    bool Materialable::getDisableTextureColor() const
+    {
+        return m_disableTextureColor;
+    }
     //////////////////////////////////////////////////////////////////////////
     void Materialable::setPremultiplyAlpha( bool _premultiplyAlpha )
     {
@@ -528,51 +532,71 @@ namespace Mengine
     {
         return m_premultiplyAlpha;
     }
-	//////////////////////////////////////////////////////////////////////////
-	void Materialable::setBlendMode( EMaterialBlendMode _blendMode )
-	{
-		m_blendMode = _blendMode;
-
-		this->invalidateMaterial();
-	}
-	//////////////////////////////////////////////////////////////////////////
-	EMaterialBlendMode Materialable::getBlendMode() const
-	{
-		return m_blendMode;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void Materialable::updateMaterial_() const
-	{
-		m_invalidateMaterial = false;
-
-		m_material = this->_updateMaterial();
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void Materialable::releaseMaterial()
-	{ 
-		m_material = nullptr;
-
-		this->invalidateMaterial();
-	}
     //////////////////////////////////////////////////////////////////////////
-    RenderMaterialInterfacePtr Materialable::makeSolidMaterial( bool _solid ) const
+    void Materialable::setBlendMode( EMaterialBlendMode _blendMode )
     {
-        RenderMaterialInterfacePtr material = Helper::makeSolidMaterial( m_materialName, m_blendMode, _solid );
+        m_blendMode = _blendMode;
+
+        this->invalidateMaterial();
+    }
+    //////////////////////////////////////////////////////////////////////////
+    EMaterialBlendMode Materialable::getBlendMode() const
+    {
+        return m_blendMode;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void Materialable::updateMaterial_() const
+    {
+        m_invalidateMaterial = false;
+
+        m_material = this->_updateMaterial();
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void Materialable::releaseMaterial()
+    {
+        m_material = nullptr;
+
+        this->invalidateMaterial();
+    }
+    //////////////////////////////////////////////////////////////////////////
+    RenderMaterialInterfacePtr Materialable::makeSolidMaterial( bool _solid, const Char * _doc ) const
+    {
+        RenderMaterialInterfacePtr material = Helper::makeSolidMaterial( m_materialName, m_blendMode, _solid, _doc );
 
         return material;
     }
-	//////////////////////////////////////////////////////////////////////////
-	RenderMaterialInterfacePtr Materialable::makeImageMaterial( const ResourceImagePtr & _resourceImage, bool _solid ) const
-	{
-		RenderMaterialInterfacePtr material = Helper::makeImageMaterial( _resourceImage, m_materialName, m_blendMode, m_disableTextureColor, _solid );
+    //////////////////////////////////////////////////////////////////////////
+    RenderMaterialInterfacePtr Materialable::makeImageMaterial( const ResourceImagePtr & _resourceImage, bool _solid, const Char * _doc ) const
+    {
+        RenderMaterialInterfacePtr material = Helper::makeImageMaterial( _resourceImage, m_materialName, m_blendMode, m_disableTextureColor, _solid, _doc );
 
-		return material;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	RenderMaterialInterfacePtr Materialable::makeTextureMaterial( const RenderTextureInterfacePtr * _textures, uint32_t _textureCount, bool _solid ) const
-	{
-		RenderMaterialInterfacePtr material = Helper::makeTextureMaterial( _textures, _textureCount, m_materialName, m_blendMode, m_premultiplyAlpha, m_disableTextureColor, _solid );
+        return material;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    RenderMaterialInterfacePtr Materialable::makeTextureMaterial( uint32_t _textureCount, const mt::uv4f * _uvs, const RenderTextureInterfacePtr * _textures, bool _solid, const Char * _doc ) const
+    {
+        RenderMaterialInterfacePtr material = Helper::makeTextureMaterial( m_materialName, _textureCount, _uvs, _textures, m_blendMode, m_premultiplyAlpha, m_disableTextureColor, _solid, _doc );
 
-		return material;
-	}
+        return material;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    RenderMaterialInterfacePtr Materialable::getMaterial3( EMaterial _materialId
+        , EPrimitiveType _primitiveType
+        , uint32_t _textureCount
+        , const mt::uv4f * _uvs
+        , const RenderTextureInterfacePtr * _textures, const Char * _doc ) const
+    {
+        RenderMaterialInterfacePtr material = RENDERMATERIAL_SERVICE()
+            ->getMaterial3( _materialId, _primitiveType, _textureCount, _uvs, _textures, _doc );
+
+        return material;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    const RenderMaterialInterfacePtr & Materialable::getSolidMaterial( EMaterialBlendMode _blendMode ) const
+    {
+        const RenderMaterialInterfacePtr & material = RENDERMATERIAL_SERVICE()
+            ->getSolidMaterial( _blendMode );
+
+        return material;
+    }
 }

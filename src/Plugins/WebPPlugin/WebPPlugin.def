@@ -1,0 +1,3 @@
+LIBRARY		"VideoPlugin"
+EXPORTS 	
+	dllCreatePlugin 	@1

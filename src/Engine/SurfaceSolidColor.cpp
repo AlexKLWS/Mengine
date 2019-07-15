@@ -2,29 +2,31 @@
 
 #include "Interface/RenderSystemInterface.h"
 
-#include "Logger/Logger.h"
+#include "Kernel/Logger.h"
+#include "Kernel/Document.h"
+#include "Kernel/AssertionMemoryPanic.h"
 
 namespace Mengine
 {
-	//////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////
     SurfaceSolidColor::SurfaceSolidColor()
-        : m_size(0.f, 0.f)
-	{
-	}
-	//////////////////////////////////////////////////////////////////////////
+        : m_size( 0.f, 0.f )
+    {
+    }
+    //////////////////////////////////////////////////////////////////////////
     SurfaceSolidColor::~SurfaceSolidColor()
-	{
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void SurfaceSolidColor::setSolidColor( const ColourValue & _color )
-	{
+    {
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void SurfaceSolidColor::setSolidColor( const Color & _color )
+    {
         m_color = _color;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	const ColourValue & SurfaceSolidColor::getSolidColor() const
-	{
-		return m_color;
-	}
+    }
+    //////////////////////////////////////////////////////////////////////////
+    const Color & SurfaceSolidColor::getSolidColor() const
+    {
+        return m_color;
+    }
     //////////////////////////////////////////////////////////////////////////
     void SurfaceSolidColor::setSolidSize( const mt::vec2f & _size )
     {
@@ -37,21 +39,6 @@ namespace Mengine
     {
         return m_size;
     }
-    //////////////////////////////////////////////////////////////////////////
-    void SurfaceSolidColor::correctUV( uint32_t _index, mt::vec2f & _out, const mt::vec2f & _in )
-    {
-        (void)_index;
-
-        _out = _in;
-    }
-	//////////////////////////////////////////////////////////////////////////
-	bool SurfaceSolidColor::_update( float _current, float _timing )
-	{	
-        (void)_current;
-        (void)_timing;
-
-        return false;
-	}
     //////////////////////////////////////////////////////////////////////////
     const mt::vec2f & SurfaceSolidColor::getMaxSize() const
     {
@@ -75,32 +62,37 @@ namespace Mengine
     //////////////////////////////////////////////////////////////////////////
     const mt::uv4f & SurfaceSolidColor::getUV( uint32_t _index ) const
     {
-        (void)_index;
+        MENGINE_UNUSED( _index );
 
         return mt::uv4f::identity();
     }
     //////////////////////////////////////////////////////////////////////////
-    const ColourValue & SurfaceSolidColor::getColor() const
-    {        
+    const Color & SurfaceSolidColor::getColor() const
+    {
         return m_color;
     }
-	//////////////////////////////////////////////////////////////////////////
-	RenderMaterialInterfacePtr SurfaceSolidColor::_updateMaterial() const
-	{	
-        bool solid = m_color.isSolid();
+    //////////////////////////////////////////////////////////////////////////
+    bool SurfaceSolidColor::update( const UpdateContext * _context )
+    {
+        MENGINE_UNUSED( _context );
 
-		RenderMaterialInterfacePtr material = this->makeSolidMaterial( solid );
+        //Empty
 
-		if( material == nullptr )
-		{
-			LOGGER_ERROR("SurfaceSolidColor::updateMaterial_ %s m_material is NULL"
-				, this->getName().c_str()
-				);
+        return false;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    RenderMaterialInterfacePtr SurfaceSolidColor::_updateMaterial() const
+    {
+        //ToDo MaterialContex
+        //bool solid = m_color.isSolid();
 
-			return nullptr;
-		}
+        const RenderMaterialInterfacePtr & material = this->makeSolidMaterial( false, MENGINE_DOCUMENT_FUNCTION );
 
-		return material;
-	}
-	//////////////////////////////////////////////////////////////////////////
+        MENGINE_ASSERTION_MEMORY_PANIC( material, nullptr, "'%s' m_material is NULL"
+            , this->getName().c_str()
+        );
+
+        return material;
+    }
+    //////////////////////////////////////////////////////////////////////////
 }

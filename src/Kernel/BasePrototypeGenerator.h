@@ -1,64 +1,45 @@
 #pragma once
 
-#include "Interface/PrototypeManagerInterface.h"
-#include "Interface/ScriptSystemInterface.h"
+#include "Interface/PrototypeGeneratorInterface.h"
 
-#include "Kernel/Node.h"
-
-#include "Core/ServantBase.h"
-#include "Core/ConstString.h"
-#include "Core/MemoryAllocator.h"
-
-#include "Factory/Factory.h"
-
-#include "Logger/Logger.h"
+#include "Kernel/Factorable.h"
 
 namespace Mengine
 {
-	class BasePrototypeGenerator
-		: public ServantBase<PrototypeGeneratorInterface>
-		, public MemoryAllocator<BasePrototypeGenerator>
-	{
-	public:
-		BasePrototypeGenerator();
+    class BasePrototypeGenerator
+        : public PrototypeGeneratorInterface
+        , public Factorable
+    {
+    public:
+        BasePrototypeGenerator();
         ~BasePrototypeGenerator() override;
 
-    protected:
-        inline const ConstString & getCategory() const;
-        inline const ConstString & getPrototype() const;
-        inline const FactoryPtr & getFactory() const;
+    public:
+        void setCategory( const ConstString & _category ) override;
+        MENGINE_INLINE const ConstString & getCategory() const override;
 
-	protected:
-		bool initialize( const ConstString & _category, const ConstString & _prototype ) override;
+        void setPrototype( const ConstString & _prototype ) override;
+        MENGINE_INLINE const ConstString & getPrototype() const override;
 
     protected:
-        virtual FactoryPtr _initializeFactory() = 0;
+        bool initialize() override;
+        void finalize() override;
 
     protected:
         uint32_t count() const override;
 
     protected:
-		void destroy() override;
-
-	protected:
-		ConstString m_category;
-		ConstString m_prototype;
-
-        FactoryPtr m_factory;
-	};
+        ConstString m_category;
+        ConstString m_prototype;
+    };
     //////////////////////////////////////////////////////////////////////////
-    inline const ConstString & BasePrototypeGenerator::getCategory() const
+    MENGINE_INLINE const ConstString & BasePrototypeGenerator::getCategory() const
     {
         return m_category;
     }
     //////////////////////////////////////////////////////////////////////////
-    inline const ConstString & BasePrototypeGenerator::getPrototype() const
+    MENGINE_INLINE const ConstString & BasePrototypeGenerator::getPrototype() const
     {
         return m_prototype;
-    }
-    //////////////////////////////////////////////////////////////////////////
-    inline const FactoryPtr & BasePrototypeGenerator::getFactory() const
-    {
-        return m_factory;
     }
 }

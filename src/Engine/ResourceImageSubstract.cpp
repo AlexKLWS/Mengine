@@ -1,82 +1,61 @@
 #include "ResourceImageSubstract.h"
 
 #include "Interface/RenderSystemInterface.h"
-#include "Interface/ResourceInterface.h"
+#include "Interface/ResourceServiceInterface.h"
 
-#include "Metacode/Metacode.h"
-
-#include "Logger/Logger.h"
+#include "Kernel/Logger.h"
+#include "Kernel/AssertionMemoryPanic.h"
 
 namespace Mengine
 {
-	//////////////////////////////////////////////////////////////////////////
-	ResourceImageSubstract::ResourceImageSubstract()
-	{
-	}
+    //////////////////////////////////////////////////////////////////////////
+    ResourceImageSubstract::ResourceImageSubstract()
+    {
+    }
     //////////////////////////////////////////////////////////////////////////
     ResourceImageSubstract::~ResourceImageSubstract()
     {
     }
     //////////////////////////////////////////////////////////////////////////
-    bool ResourceImageSubstract::_loader( const Metabuf::Metadata * _meta )
+    void ResourceImageSubstract::setResourceImageName( const ConstString & _resourceImageName )
     {
-        const Metacode::Meta_Data::Meta_DataBlock::Meta_ResourceImageSubstract * metadata 
-            = static_cast<const Metacode::Meta_Data::Meta_DataBlock::Meta_ResourceImageSubstract *>(_meta);
-        
-        m_hasAlpha = true;
-
-        m_resourceImageName = metadata->get_Image_Name();
-
-		m_uvImage = metadata->get_Image_UV();
-		m_uvAlpha = m_uvImage;
-
-        metadata->get_Image_UVRotate( &m_uvImageRotate );
-        m_uvAlphaRotate = m_uvImageRotate;
-
-        metadata->get_Image_Alpha( &m_hasAlpha );
-
-		m_maxSize = metadata->get_Image_MaxSize();
-
-		m_size = m_maxSize;
-		metadata->get_Image_Size( &m_size );
-		metadata->get_Image_Offset( &m_offset );
-
-        return true;
+        m_resourceImageName = _resourceImageName;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    const ConstString & ResourceImageSubstract::getResourceImageName() const
+    {
+        return m_resourceImageName;
     }
     //////////////////////////////////////////////////////////////////////////
     bool ResourceImageSubstract::_compile()
     {
         if( m_resourceImageName.empty() == true )
         {
-            LOGGER_ERROR("ResourceImageSubstract::_compile '%s' not setup image resource"
+            LOGGER_ERROR( "'%s' not setup image resource"
                 , this->getName().c_str()
-                );
+            );
 
             return false;
         }
 
-        m_resourceImage = RESOURCE_SERVICE()
+        const ResourceImagePtr & resourceImage = RESOURCE_SERVICE()
             ->getResource( m_resourceImageName );
 
-        if( m_resourceImage == nullptr )
-        {
-            LOGGER_ERROR("ResourceImageSubstract::_compile '%s' category '%s' group '%s' invalid get image resource '%s'"
-                , this->getName().c_str()
-				, this->getCategory()->getName().c_str()
-				, this->getGroupName().c_str()
-                , m_resourceImageName.c_str()
-                );
+        MENGINE_ASSERTION_MEMORY_PANIC( resourceImage, false, "'%s' category '%s' group '%s' invalid get image resource '%s'"
+            , this->getName().c_str()
+            , this->getFileGroup()->getName().c_str()
+            , this->getGroupName().c_str()
+            , m_resourceImageName.c_str()
+        );
 
-            return false;
-        }
-                       
+        m_resourceImage = resourceImage;
         m_texture = m_resourceImage->getTexture();
         m_textureAlpha = m_resourceImage->getTextureAlpha();
 
         bool pow2 = m_texture->isPow2();
 
         this->setPow2( pow2 );
-      		        
+
         return true;
     }
     //////////////////////////////////////////////////////////////////////////
@@ -86,8 +65,21 @@ namespace Mengine
 
         if( m_resourceImage != nullptr )
         {
-            m_resourceImage->decrementReference();
+            m_resourceImage->release();
             m_resourceImage = nullptr;
+        }
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void ResourceImageSubstract::correctUVTexture()
+    {
+        for( uint32_t i = 0; i != 4; ++i )
+        {
+            m_uvTextureImage[i] = m_uvImage[i];
+        }
+
+        for( uint32_t i = 0; i != 4; ++i )
+        {
+            m_uvTextureAlpha[i] = m_uvAlpha[i];
         }
     }
 }

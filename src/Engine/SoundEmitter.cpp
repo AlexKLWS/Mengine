@@ -2,64 +2,56 @@
 
 #include "SurfaceSound.h"
 
-#include "Logger/Logger.h"
+#include "Kernel/Logger.h"
+#include "Kernel/AssertionMemoryPanic.h"
 
 namespace Mengine
 {
-	//////////////////////////////////////////////////////////////////////////
-	SoundEmitter::SoundEmitter()
-	{
-	}
-	//////////////////////////////////////////////////////////////////////////
-	SoundEmitter::~SoundEmitter()
-	{
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void SoundEmitter::setSurfaceSound( const SurfaceSoundPtr & _surfaceSound )
-	{
+    //////////////////////////////////////////////////////////////////////////
+    SoundEmitter::SoundEmitter()
+    {
+    }
+    //////////////////////////////////////////////////////////////////////////
+    SoundEmitter::~SoundEmitter()
+    {
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void SoundEmitter::setSurfaceSound( const SurfaceSoundPtr & _surfaceSound )
+    {
         if( m_surfaceSound == _surfaceSound )
         {
             return;
         }
 
-        m_surfaceSound = _surfaceSound;
+        this->recompile( [this, _surfaceSound]() {m_surfaceSound = _surfaceSound; } );
+    }
+    //////////////////////////////////////////////////////////////////////////
+    const SurfaceSoundPtr & SoundEmitter::getSurfaceSound() const
+    {
+        return m_surfaceSound;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    bool SoundEmitter::_compile()
+    {
+        MENGINE_ASSERTION_MEMORY_PANIC( m_surfaceSound, false, "'%s' can`t setup sound surface"
+            , this->getName().c_str()
+        );
 
-        this->recompile();
-	}
-	//////////////////////////////////////////////////////////////////////////
-	const SurfaceSoundPtr & SoundEmitter::getSurfaceSound() const
-	{
-		return m_surfaceSound;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	bool SoundEmitter::_compile()
-	{
-		if( m_surfaceSound == nullptr )
-		{
-			LOGGER_ERROR("SoundEmitter::_compile: '%s' can`t setup sound surface"
-				, this->getName().c_str()				
-				);
-
-			return false;
-		}
-
-		if( m_surfaceSound->compile() == false )
+        if( m_surfaceSound->compile() == false )
         {
-            LOGGER_ERROR("SoundEmitter::_compile: '%s' can`t compile sound surface '%s'"
+            LOGGER_ERROR( "'%s' can`t compile sound surface '%s'"
                 , this->getName().c_str()
-				, m_surfaceSound->getName().c_str()
-                );
+                , m_surfaceSound->getName().c_str()
+            );
 
             return false;
         }
 
-		return true;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void SoundEmitter::_release()
-	{ 
-		Node::_release();
-
-		m_surfaceSound->release();
-	}
+        return true;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void SoundEmitter::_release()
+    {
+        m_surfaceSound->release();
+    }
 }

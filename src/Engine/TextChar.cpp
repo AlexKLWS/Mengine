@@ -1,6 +1,9 @@
 #include "TextChar.h"
 
-#include "Core/String.h"
+#include "Interface/StringizeServiceInterface.h"
+#include "Interface/TextServiceInterface.h"
+
+#include "Kernel/String.h"
 
 #include <algorithm>
 
@@ -9,30 +12,9 @@ namespace Mengine
     namespace Helper
     {
         //////////////////////////////////////////////////////////////////////////
-        const TVectorTextChunks::size_type TextChunkNPos = (TVectorTextChunks::size_type)(-1);
+        static const VectorTextLineChunks::size_type TextChunkNPos = ~0U;
         //////////////////////////////////////////////////////////////////////////
-        static TVectorCacheFonts::iterator find_font( TVectorCacheFonts & _cacheFonts, const TextFontInterfacePtr & _font )
-        {
-            for( TVectorCacheFonts::iterator
-                it = _cacheFonts.begin(),
-                it_end = _cacheFonts.end();
-                it != it_end;
-                ++it )
-            {
-                const CacheFont & cache = *it;
-
-                if( cache.font != _font )
-                {
-                    continue;
-                }
-
-                return it;
-            }
-
-            return _cacheFonts.end();
-        }
-        //////////////////////////////////////////////////////////////////////////
-        static bool test2( TVectorTextChunks & _out, const U32String & _in, TVectorCacheFonts & _cacheFonts, uint32_t _font, const U32String & _pre, const U32String & _post, const U32String & _end, U32String::size_type _offset, U32String::size_type _size )
+        static bool test2( VectorTextLineChunks & _out, const U32String & _in, VectorCacheFonts & _cacheFonts, uint32_t _font, const U32String & _pre, const U32String & _post, const U32String & _end, U32String::size_type _offset, U32String::size_type _size )
         {
             if( _offset == _size )
             {
@@ -43,7 +25,7 @@ namespace Mengine
 
             if( found_pre == U32String::npos )
             {
-                TextChunk c;
+                TextLineChunk c;
                 c.value = _in.substr( _offset, _size - _offset );
                 c.fontId = _font;
 
@@ -54,7 +36,7 @@ namespace Mengine
 
             if( found_pre != _offset )
             {
-                TextChunk c;
+                TextLineChunk c;
                 c.value = _in.substr( _offset, found_pre - _offset );
                 c.fontId = _font;
 
@@ -63,7 +45,7 @@ namespace Mengine
 
             U32String::size_type found_post = _in.find( _post, found_pre );
 
-            if( found_post == std::string::npos )
+            if( found_post == String::npos )
             {
                 return false;
             }
@@ -75,25 +57,33 @@ namespace Mengine
 
             U32String::size_type found_end = _in.find( _end, found_post );
 
-            if( found_end == std::string::npos )
+            if( found_end == String::npos )
             {
                 return false;
             }
 
             U32String::size_type new_begin = found_post + _post.size();
             U32String::size_type new_end = found_end;
-            
+
             if( new_begin != new_end )
             {
-                TextChunk c;
+                TextLineChunk c;
                 c.value = _in.substr( new_begin, new_end - new_begin );
 
-                ConstString c_FontName = Helper::stringizeString( name );
+				Char buffer_name[256] = {0};
 
-                TextFontInterfacePtr font = TEXT_SERVICE()
+				Char* buffer_name_iterator = buffer_name;
+				for (U32String::value_type v : name)
+				{
+					*buffer_name_iterator++ = (Char)v;
+				}
+
+                ConstString c_FontName = Helper::stringizeString(buffer_name);
+
+                const TextFontInterfacePtr & font = TEXT_SERVICE()
                     ->getFont( c_FontName );
 
-                TVectorCacheFonts::iterator it_found = find_font( _cacheFonts, font );
+                VectorCacheFonts::iterator it_found = std::find_if( _cacheFonts.begin(), _cacheFonts.end(), [&font]( const CacheFont & cache ) { return cache.font == font; } );
 
                 if( it_found != _cacheFonts.end() )
                 {
@@ -103,7 +93,7 @@ namespace Mengine
                 }
                 else
                 {
-                    TVectorCacheFonts::size_type cacheFontSize = _cacheFonts.size();
+                    VectorCacheFonts::size_type cacheFontSize = _cacheFonts.size();
 
                     c.fontId = (uint32_t)cacheFontSize;
 
@@ -126,7 +116,7 @@ namespace Mengine
             return true;
         }
         //////////////////////////////////////////////////////////////////////////
-        bool test( TVectorTextChunks & _out, const U32String & _in, TVectorCacheFonts & _cacheFonts, uint32_t _font )
+        bool test( VectorTextLineChunks & _out, const U32String & _in, VectorCacheFonts & _cacheFonts, uint32_t _font )
         {
             U32String tag_pre = U"{{font=";
             U32String tag_post = U"}}";
@@ -139,12 +129,12 @@ namespace Mengine
             return successful;
         }
         //////////////////////////////////////////////////////////////////////////
-        void substr( TVectorTextChunks & _out, const TVectorTextChunks & _str, TVectorTextChunks::size_type _offset, TVectorTextChunks::size_type _size )
+        void substr( VectorTextLineChunks & _out, const VectorTextLineChunks & _str, VectorTextLineChunks::size_type _offset, VectorTextLineChunks::size_type _size )
         {
-            TVectorTextChunks::const_iterator it_offset = _str.begin();
+            VectorTextLineChunks::const_iterator it_offset = _str.begin();
             std::advance( it_offset, _offset );
 
-            TVectorTextChunks::const_iterator it_size = _str.begin();
+            VectorTextLineChunks::const_iterator it_size = _str.begin();
 
             if( _size == TextChunkNPos )
             {
@@ -158,25 +148,25 @@ namespace Mengine
             _out.insert( _out.begin(), it_offset, it_size );
         }
         //////////////////////////////////////////////////////////////////////////
-        void split( TVectorTextLines & _lines, const TVectorTextChunks & _chunks, const TVectorU32String & _delims )
+        void split( VectorTextLineChunks2 & _lines, const VectorTextLineChunks & _chunks, const VectorU32String & _delims )
         {
-            TVectorTextChunks collect;
+            VectorTextLineChunks collect;
 
-            for( const TextChunk & chunk : _chunks )
+            for( const TextLineChunk & chunk : _chunks )
             {
-                TVectorU32String outStrings;
+                VectorU32String outStrings;
                 if( Helper::u32split3( outStrings, chunk.value, _delims ) == false )
-                { 
+                {
                     collect.emplace_back( chunk );
 
                     continue;
                 }
 
-                TVectorU32String::const_iterator it_strings = outStrings.begin();
+                VectorU32String::const_iterator it_strings = outStrings.begin();
 
                 const U32String & first_value = *it_strings;
 
-                TextChunk new_chunk;
+                TextLineChunk new_chunk;
                 new_chunk.value = first_value;
                 new_chunk.fontId = chunk.fontId;
 
@@ -184,7 +174,7 @@ namespace Mengine
 
                 ++it_strings;
 
-                for( TVectorU32String::const_iterator
+                for( VectorU32String::const_iterator
                     it = it_strings,
                     it_end = outStrings.end();
                     it != it_end;
@@ -192,7 +182,7 @@ namespace Mengine
                 {
                     const U32String & next_value = *it;
 
-                    TextChunk next_chunk;
+                    TextLineChunk next_chunk;
                     next_chunk.value = next_value;
                     next_chunk.fontId = chunk.fontId;
 

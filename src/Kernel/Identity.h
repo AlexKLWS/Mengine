@@ -2,39 +2,39 @@
 
 #include "Config/Typedef.h"
 
-#include "Core/ConstString.h"
-#include "Core/Mixin.h"
+#include "Kernel/ConstString.h"
+#include "Kernel/Mixin.h"
 
 namespace Mengine
 {
-	class Identity
+    class Identity
         : public Mixin
-	{
-	public:
-		Identity();
+    {
+    public:
+        Identity();
         ~Identity();
 
-	public:
-		void setName( const ConstString & _name );
-		inline const ConstString & getName() const;
+    public:
+        void setName( const ConstString & _name );
+        MENGINE_INLINE const ConstString & getName() const;
 
         void setType( const ConstString & _type );
-        inline const ConstString & getType() const;
-		
-	protected:
-		ConstString m_name;
-		ConstString m_type;
-	};
+        MENGINE_INLINE const ConstString & getType() const;
+
+    protected:
+        ConstString m_name;
+        ConstString m_type;
+    };
     //////////////////////////////////////////////////////////////////////////
     typedef IntrusivePtr<Identity> IdentityPtr;
-	//////////////////////////////////////////////////////////////////////////
-	inline const ConstString & Identity::getName()const
-	{	
-		return m_name;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	inline const ConstString & Identity::getType() const
-	{
-		return m_type;
-	}
+    //////////////////////////////////////////////////////////////////////////
+    MENGINE_INLINE const ConstString & Identity::getName()const
+    {
+        return m_name;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    MENGINE_INLINE const ConstString & Identity::getType() const
+    {
+        return m_type;
+    }
 }

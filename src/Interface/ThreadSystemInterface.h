@@ -1,88 +1,32 @@
 #pragma once
 
-#include "Interface/ThreadInterface.h"
-
 #include "Interface/ServiceInterface.h"
+#include "Interface/ThreadIdentityInterface.h"
+#include "Interface/ThreadMutexInterface.h"
+#include "Interface/ThreadConditionVariableInterface.h"
 
-#include "Kernel/ThreadJob.h"
+#include "Kernel/ConstString.h"
 
 namespace Mengine
 {
-	//////////////////////////////////////////////////////////////////////////
-	const int32_t MENGINE_THREAD_PRIORITY_LOWEST = -2;
-	const int32_t MENGINE_THREAD_PRIORITY_BELOW_NORMAL = -1;
-	const int32_t MENGINE_THREAD_PRIORITY_NORMAL = 0;
-	const int32_t MENGINE_THREAD_PRIORITY_ABOVE_NORMAL = 1;
-	const int32_t MENGINE_THREAD_PRIORITY_HIGHEST = 2;
-	const int32_t MENGINE_THREAD_PRIORITY_TIME_CRITICAL = 3;
-    //////////////////////////////////////////////////////////////////////////
-	class ThreadSystemInterface
-        : public ServiceInterface
-	{
-        SERVICE_DECLARE("ThreadSystem")
-
-	public:
-		virtual bool avaliable() const = 0;
-
-	public:
-		virtual ThreadIdentityInterfacePtr createThread( int _priority, const char * _file, uint32_t _line ) = 0;
-
-	public:
-		virtual void sleep( uint32_t _ms ) = 0;
-
-	public:
-		virtual ThreadMutexInterfacePtr createMutex( const char * _file, uint32_t _line ) = 0;
-
-	public:
-		virtual ptrdiff_t getCurrentThreadId() const = 0;
-	};
-    //////////////////////////////////////////////////////////////////////////
-#   define THREAD_SYSTEM()\
-    ((Mengine::ThreadSystemInterface*)SERVICE_GET(Mengine::ThreadSystemInterface))
-    //////////////////////////////////////////////////////////////////////////
-    class ThreadServiceInterface
+    class ThreadSystemInterface
         : public ServiceInterface
     {
-        SERVICE_DECLARE("ThreadService")
-
-	public:
-		virtual bool avaliable() const = 0;
+        SERVICE_DECLARE( "ThreadSystem" )
 
     public:
-        virtual void update() = 0;
+        virtual ThreadIdentityInterfacePtr createThread( const ConstString & _name, int32_t _priority, const Char * _doc ) = 0;
+        virtual ThreadMutexInterfacePtr createMutex( const Char * _doc ) = 0;
+        virtual ThreadConditionVariableInterfacePtr createConditionVariable( const Char * _doc ) = 0;
 
     public:
-        virtual ThreadJobPtr createJob( uint32_t _sleep ) = 0;
-
-	public:
-		virtual bool createThread( const ConstString & _threadName, int _priority, const char * _file, uint32_t _line ) = 0;
-		virtual bool destroyThread( const ConstString & _threadName ) = 0;
+        virtual void sleep( uint32_t _ms ) = 0;
 
     public:
-        virtual bool hasThread( const ConstString & _name ) const = 0;
-
-    public:
-        virtual bool addTask( const ConstString & _threadName, const ThreadTaskInterfacePtr & _task ) = 0;
-        virtual bool joinTask( const ThreadTaskInterfacePtr & _task ) = 0;
-
-    public:
-        virtual void stopTasks() = 0;
-
-	public:
-		virtual ThreadQueueInterfacePtr runTaskQueue( const ConstString & _threadName, uint32_t _countThread, uint32_t _packetSize ) = 0;
-		virtual void cancelTaskQueue( const ThreadQueueInterfacePtr & _queue ) = 0;
-
-    public:
-		virtual ThreadMutexInterfacePtr createMutex( const char * _file, uint32_t _line ) = 0;
-
-	public:
-		virtual void sleep( uint32_t _ms ) = 0;
-
-	public:
-		virtual ptrdiff_t getCurrentThreadId() = 0;
+        virtual ptrdiff_t getCurrentThreadId() const = 0;
     };
-    //////////////////////////////////////////////////////////////////////////
-#   define THREAD_SERVICE()\
-    ((Mengine::ThreadServiceInterface*)SERVICE_GET(Mengine::ThreadServiceInterface))
-    //////////////////////////////////////////////////////////////////////////
 }
+//////////////////////////////////////////////////////////////////////////
+#define THREAD_SYSTEM()\
+    ((Mengine::ThreadSystemInterface*)SERVICE_GET(Mengine::ThreadSystemInterface))
+//////////////////////////////////////////////////////////////////////////

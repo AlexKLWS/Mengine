@@ -1,60 +1,70 @@
-#	pragma once
+#pragma once
 
-#	include "Interface/ImageCodecInterface.h"
-#	include "Interface/MemoryInterface.h"
+#include "Interface/ImageCodecInterface.h"
+#include "Interface/MemoryInterface.h"
 
-#	include "Core/ColourValue.h"
+#include "Kernel/Color.h"
+#include "Kernel/FilePath.h"
+#include "Kernel/Factorable.h"
 
-#	include "pybind/pybind.hpp"
+#include "pybind/pybind.hpp"
 
 namespace Mengine
 {
-	//////////////////////////////////////////////////////////////////////////
-	class Image
-	{
-	public:
-		Image();
-		~Image();
+    //////////////////////////////////////////////////////////////////////////
+    typedef IntrusivePtr<class Image> ImagePtr;
+    //////////////////////////////////////////////////////////////////////////
+    class Image
+        : public Factorable
+    {
+    public:
+        Image();
+        ~Image();
 
-	public:
-		bool load( const FilePath & _path );
-		bool save( const FilePath & _path );
-		
-		bool create( uint32_t _width, uint32_t _height, uint32_t _channel );
-		
-		void fill( const ColourValue & _colour );
+    public:
+        bool load( const FilePath & _path );
+        bool save( const FilePath & _path );
 
-		bool paste( Image * _image, uint32_t _x, uint32_t _y );
+        bool create( uint32_t _width, uint32_t _height, uint32_t _channel );
 
-		pybind::list getdata() const;
-		bool putdata( const pybind::list & _data );
+        void fill( const Color & _colour );
 
-		Image * rotate( float _angle );
+        bool paste( const ImagePtr & _image, uint32_t _x, uint32_t _y );
 
-		pybind::list getextrema() const;
-		bool uselessalpha() const;
+        pybind::list getdata() const;
+        bool putdata( const pybind::list & _data );
 
-		pybind::tuple split() const;
+        ImagePtr rotate( float _angle );
 
-	public:
-		uint8_t * getMemory() const;
+        pybind::list getextrema() const;
+        bool uselessalpha() const;
 
-		uint32_t getWidth() const;
-		uint32_t getHeight() const;
-		uint32_t getChannels() const;
+        pybind::tuple split() const;
 
-	public:
-		static void embedding( pybind::kernel_interface * _kernel, PyObject * _module );
+        void release();
 
-	protected:
-		FilePath m_path;
+    public:
+        uint8_t * getMemory() const;
 
-		MemoryBufferInterfacePtr m_memory;
+        uint32_t getWidth() const;
+        uint32_t getHeight() const;
+        uint32_t getChannels() const;
 
-		uint32_t m_width;
-		uint32_t m_height;
-		uint32_t m_channels;
+    public:
+        static void embedding( pybind::kernel_interface * _kernel, PyObject * _module );
 
-		PyObject * m_embed;
-	};
+    protected:
+        FilePath m_path;
+
+        MemoryBufferInterfacePtr m_memory;
+
+        uint32_t m_width;
+        uint32_t m_height;
+        uint32_t m_channels;
+    };
+    //////////////////////////////////////////////////////////////////////////
+    typedef IntrusivePtr<Image> ImagePtr;
+    //////////////////////////////////////////////////////////////////////////
+    ImagePtr newImage();
+    //////////////////////////////////////////////////////////////////////////
 }

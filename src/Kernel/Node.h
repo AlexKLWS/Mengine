@@ -2,312 +2,271 @@
 
 #include "Kernel/Identity.h"
 #include "Kernel/Scriptable.h"
+#include "Kernel/Pickerable.h"
 #include "Kernel/Eventable.h"
 #include "Kernel/Compilable.h"
-//#include "Kernel/GlobalHandleAdapter.h"
 #include "Kernel/Updatable.h"
 #include "Kernel/Renderable.h"
-#include "Kernel/BoundingBox.h"
-#include "Kernel/Transformation3D.h"
-#include "Kernel/Colorable.h"
+#include "Kernel/Transformation.h"
 #include "Kernel/Affectorable.h"
 #include "Kernel/Visitable.h"
-#include "Kernel/Servant.h"
-
-#include "Factory/Factorable.h"
-
-#include "Core/Viewport.h"
-
-#include "stdex/intrusive_slug_list_size_ptr.h"
-#include "stdex/intrusive_slug_ptr.h"
+#include "Kernel/Animatable.h"
+#include "Kernel/Unknowable.h"
+#include "Kernel/Factorable.h"
+#include "Kernel/IntrusiveSlugListSize.h"
+#include "Kernel/IntrusiveSlugIterator.h"
+#include "Kernel/Viewport.h"
 
 namespace Mengine
-{		
-    typedef IntrusivePtr<class MousePickerTrapInterface> MousePickerTrapInterfacePtr;
-    typedef IntrusivePtr<class RenderCameraInterface> RenderCameraInterfacePtr;
-    typedef IntrusivePtr<class RenderScissorInterface> RenderScissorInterfacePtr;
-    typedef IntrusivePtr<class RenderViewportInterface> RenderViewportInterfacePtr;
-    typedef IntrusivePtr<class RenderTargetInterface> RenderTargetInterfacePtr;
-	
-	typedef IntrusivePtr<class Node> NodePtr;
-
-    typedef stdex::intrusive_slug_list_size_ptr<Node> TListNodeChild;
-	typedef stdex::intrusive_slug_ptr<Node> TSlugChild;
-    
-	class Node
-        : public stdex::intrusive_slug_linked_ptr<Node>
-		, public Factorable
+{
+    //////////////////////////////////////////////////////////////////////////
+    enum ENodeChildInsertMode
+    {
+        ENCI_FRONT,
+        ENCI_MIDDLE,
+        ENCI_BACK
+    };
+    //////////////////////////////////////////////////////////////////////////
+    typedef IntrusivePtr<class Node> NodePtr;
+    //////////////////////////////////////////////////////////////////////////
+    typedef IntrusiveSlugListSize<Node> IntrusiveSlugListNodeChild;
+    typedef IntrusiveSlugIterator<IntrusiveSlugListNodeChild> IntrusiveSlugChild;
+    //////////////////////////////////////////////////////////////////////////
+    class Node
+        : public stdex::intrusive_slug_linked_ptr<Node, void, IntrusivePtr, IntrusivePtrBase>
+        , public Factorable
         , public Identity
-		, public Compilable
-		, public Updatable
-		, public Renderable
-		, public BoundingBox
-		, public Transformation3D
-		, public Colorable
-		, public Affectorable
+        , public Compilable
+        , public Updatable
+        , public Renderable
+        , public Transformation
+        , public Affectorable
         , public Visitable
-		, public Scriptable
-	{
-		DECLARE_VISITABLE_BASE();
-
-	public:
-		Node();
-		~Node() override;
-        
-	public:
-		void render( RenderServiceInterface * _renderService, const RenderContext * _state ) override;
-		inline bool isRenderable() const;
+        , public Scriptable
+        , public Animatable
+        , public Eventable
+        , public Pickerable
+        , public Unknowable
+    {
+        DECLARE_VISITABLE_BASE();
 
     public:
-        virtual void _renderTarget( RenderServiceInterface * _renderService, const RenderContext * _state );
-		
-	public:
-		void setRenderViewport( const RenderViewportInterfacePtr & _viewport );
-		const RenderViewportInterfacePtr & getRenderViewport() const;
-
-	public:
-		const RenderViewportInterfacePtr & getRenderViewportInheritance() const;
-		
-	public:
-		void setRenderCamera( const RenderCameraInterfacePtr & _camera );
-        const RenderCameraInterfacePtr & getRenderCamera() const;
-
-	public:
-        const RenderCameraInterfacePtr & getRenderCameraInheritance() const;
-
-	public:
-		void setRenderScissor( const RenderScissorInterfacePtr & _scissor );
-		const RenderScissorInterfacePtr & getRenderScissor() const;
-
-	public:
-		const RenderScissorInterfacePtr & getRenderScissorInheritance() const;
+        Node();
+        ~Node() override;
 
     public:
-        void setRenderTarget( const RenderTargetInterfacePtr & _target );
-        const RenderTargetInterfacePtr & getRenderTarget() const;
+        void setUniqueIdentity( uint32_t _uniqueIdentity );
+        uint32_t getUniqueIdentity() const;
 
-    public:
-        const RenderTargetInterfacePtr & getRenderTargetInheritance() const;
-
-	protected:
-		void _setHide( bool _hide ) override;
-        void _setExternalRender( bool _externalRender ) override;
-			
-	protected:
-		void _debugRender( RenderServiceInterface * _renderService, const RenderContext * _state ) override;
-	
-	protected:
-		RenderViewportInterfacePtr m_renderViewport;
-		RenderCameraInterfacePtr m_renderCamera;
-		RenderScissorInterfacePtr m_renderScissor;
-		
     protected:
-        RenderTargetInterfacePtr m_renderTarget;
-
-	protected:
-		void renderChild_( RenderServiceInterface * _renderService, const RenderContext * _state );
-
-	public:
-		void calcScreenPosition( const RenderCameraInterfacePtr & _camera, mt::vec2f & _screen );
-		
-	public:
-		const ColourValue & getWorldColor() const;
-		void calcTotalColor( ColourValue & _color ) const;
-        bool isSolidColor() const;
-
-	protected:
-		void _invalidateColor() override;
-
-	public:
-		inline Node * getParent() const;
-		inline bool hasParent() const;
+        uint32_t m_uniqueIdentity;
 
     public:
-		void addChild( const NodePtr & _node );
-		void addChildFront( const NodePtr & _node );
-		bool addChildAfter( const NodePtr & _node, const NodePtr & _after );
-		bool removeChild( const NodePtr & _node );
-		void removeChildren();
-		bool removeFromParent();
+        MENGINE_INLINE Node * getParent() const;
+        MENGINE_INLINE bool hasParent() const;
 
-		bool isHomeless() const;
-		
-		void destroyAllChild();
+    public:
+        void addChild( const NodePtr & _node );
+        void addChildFront( const NodePtr & _node );
+        bool addChildAfter( const NodePtr & _node, const NodePtr & _after );
+        bool removeChild( const NodePtr & _node );
 
-		inline TListNodeChild & getChildren();
-		inline const TListNodeChild & getChildren() const;
+        typedef Lambda<void( const NodePtr & node )> LambdaRemoveChildren;
+        void removeChildren( const LambdaRemoveChildren & _lambda );
+        bool removeFromParent();
+
+        typedef Lambda<void( const NodePtr & node )> LambdaDestroyChildren;
+        void destroyChildren( const LambdaDestroyChildren & _lambda );
+
+        MENGINE_INLINE IntrusiveSlugListNodeChild & getChildren();
+        MENGINE_INLINE const IntrusiveSlugListNodeChild & getChildren() const;
+        uint32_t getChildrenRecursiveCount() const;
 
         NodePtr findChild( const ConstString & _name, bool _recursion ) const;
-        NodePtr getSiblingPrev();
-        NodePtr getSiblingNext();
-		bool hasChild( const ConstString & _name, bool _recursive ) const;
-		bool emptyChildren() const;
+        NodePtr getSiblingPrev() const;
+        NodePtr getSiblingNext() const;
+        bool hasChild( const ConstString & _name, bool _recursive ) const;
+        bool emptyChildren() const;
+
+    protected:
+        uint32_t getLeafDeep() const;
 
     protected:
         void removeChild_( const NodePtr & _node );
-		void setParent_( Node * _node );
+        void removeParent_();
+        void setParent_( Node * _node, ENodeChildInsertMode _mode );
 
-	protected:
-		virtual bool _hasChild( const ConstString & _name, bool _recursive ) const;
-		virtual Node * _findChild( const ConstString & _name, bool _recursion ) const;
+    protected:
+        virtual bool _hasChild( const ConstString & _name, bool _recursive ) const;
+        virtual NodePtr _findChild( const ConstString & _name, bool _recursion ) const;
 
-	protected:
-		virtual void _changeParent( Node * _oldParent, Node * _newParent );
-		virtual void _addChild( const NodePtr & _node );
-		virtual void _removeChild( const NodePtr & _node );
-		
-	protected:
-		Node * m_parent;
+    protected:
+        virtual void _changeParent( Node * _oldParent, Node * _newParent );
+        virtual void _addChild( const NodePtr & _node );
+        virtual void _removeChild( const NodePtr & _node );
 
-		TListNodeChild m_children;
+    protected:
+        Node * m_parent;
 
-	private:
-		void addChild_( TListNodeChild::iterator _insert, const NodePtr & _node );
+        IntrusiveSlugListNodeChild m_children;
 
-		void insertChild_( TListNodeChild::iterator _insert, const NodePtr & _node );
-		void eraseChild_( const NodePtr & _node );
+    private:
+        void addChild_( const IntrusiveSlugListNodeChild::iterator & _insert, const NodePtr & _node, ENodeChildInsertMode _mode );
 
-	public:
-		void visitChildren( Visitor * _visitor );
-        
-	protected:
-		void _destroy() override;
-	
-	protected:
-		bool activate();
-		void deactivate();
+        void insertChild_( const IntrusiveSlugListNodeChild::iterator & _insert, const NodePtr & _node );
+        void eraseChild_( const NodePtr & _node );
 
-	public:
-		inline bool isActivate() const;
-		inline bool isAfterActive() const;
-		inline bool isDeactivating() const;
+    public:
+        typedef Lambda<void( const NodePtr & )> LambdaNode;
+        void foreachChildren( const LambdaNode & _lambda ) const;
+        void foreachChildrenUnslug( const LambdaNode & _lambda ) const;
+        void foreachChildrenReverse( const LambdaNode & _lambda ) const;
 
-	protected:
-		virtual bool _activate();
-		virtual void _afterActivate();
+        typedef Lambda<bool( const NodePtr & )> LambdaNodeBreak;
+        void foreachChildrenUnslugBreak( const LambdaNodeBreak & _lambda ) const;
 
-		virtual void _deactivate();
-		virtual void _afterDeactivate();
+        NodePtr findUniqueChild( uint32_t _uniqueIdentity ) const;
 
-	protected:
-		void _invalidateWorldMatrix () override;
-		//void _invalidateBoundingBox() override;
+    public:
+        void visitChildren( const VisitorPtr & _visitor );
 
-	public:
-		bool compile() override;
-		void release() override;
+    public:
+        void removeRelationRender_();
+        void setRelationRender_( Node * _parent );
+        void setRelationRenderFront_( Node * _parent );
+        void moveChildRenderFront_( const NodePtr & _child );
+        void moveChildRenderMiddle_( const NodePtr & _after, const NodePtr & _child );
+        void moveChildRenderBack_( const NodePtr & _child );
 
-	protected:
-		void _recompile() override;
+    protected:
+        typedef const Lambda<void( RenderInterface * )> LambdaRenderCloseChildren;
+        void foreachRenderCloseChildren_( const LambdaRenderCloseChildren & _lambda );
+        void foreachRenderReverseCloseChildren_( const LambdaRenderCloseChildren & _lambda );
+
+    public:
+        void removeRelationPicker_();
+        void setRelationPicker_( Node * _parent );
+        void setRelationPickerFront_( Node * _parent );
+        void moveChildPickerFront_( const NodePtr & _child );
+        void moveChildPickerMiddle_( const NodePtr & _after, const NodePtr & _child );
+        void moveChildPickerBack_( const NodePtr & _child );
+
+        PickerInterface * getPickerSiblingPrev( const NodePtr & _after ) const;
+
+        typedef const Lambda<void( PickerInterface * )> LambdaPickerCloseChildren;
+        void foreachPickerCloseChildren_( const LambdaPickerCloseChildren & _lambda );
+        void foreachPickerReverseCloseChildren_( const LambdaPickerCloseChildren & _lambda );
+
+    protected:
+        void _destroy() override;
+
+    protected:
+        bool activate();
+        void deactivate();
+
+    public:
+        MENGINE_INLINE bool isActivate() const;
+        MENGINE_INLINE bool isAfterActive() const;
+        MENGINE_INLINE bool isDeactivating() const;
+
+    protected:
+        virtual bool _activate();
+        virtual void _afterActivate();
+
+        virtual void _deactivate();
+        virtual void _afterDeactivate();
+
+    protected:
+        void _invalidateWorldMatrix() override;
+
+    public:
+        bool compile() override;
+        void release() override;
+
+    protected:
+        void _recompile() override;
         void _uncompile() override;
 
-	public:
-		bool enable();
-		void disable();
+    public:
+        bool enable();
+        void disable();
 
-	public:
-		inline bool isEnable() const;
+    public:
+        bool enableForce();
 
-	public:
-		void freeze( bool _value );
-		inline bool isFreeze() const;
+    public:
+        MENGINE_INLINE bool isEnable() const;
 
-	protected:
-		virtual void _freeze( bool _value );
+    public:
+        void freeze( bool _value );
+        MENGINE_INLINE bool isFreeze() const;
 
-	public:
-		void setSpeedFactor( float _speedFactor );
-		float getSpeedFactor() const;
-	
-	public:
-		void update( float _current, float _timing ) override;
+    protected:
+        virtual void _freeze( bool _value );
 
-	protected:
-		void _update( float _current, float _timing ) override;
+    public:
+        void setSpeedFactor( float _speedFactor );
+        float getSpeedFactor() const;
 
-	protected:
-		void updateChildren_( float _current, float _timing );
-		
-	public:
-		virtual MousePickerTrapInterfacePtr getPickerTrap();
+    protected:
+        uint32_t getAffectorableUpdatableMode() const override;
+        uint32_t getAffectorableUpdatableLeafDeep() const override;
 
-	protected:
-		bool m_active;
-		bool m_deactivating;
-		bool m_afterActive;
-		bool m_enable;
+    protected:
+        bool m_active;
+        bool m_deactivating;
+        bool m_afterActive;
+        bool m_enable;
 
-		float m_speedFactor;
-
-		bool m_freeze;
-
-	protected:
-		mutable bool m_invalidateRendering;
-		mutable bool m_rendering;
-
-	protected:
-		void updateRendering_() const;
-
-	protected:
-		void _updateBoundingBox( mt::box2f& _boundingBox ) const override;
-	};
+        bool m_freeze;
+    };
     //////////////////////////////////////////////////////////////////////////
     typedef IntrusivePtr<Node> NodePtr;
-	//////////////////////////////////////////////////////////////////////////
-	inline bool Node::isActivate() const
-	{
-		return m_active;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	inline bool Node::isAfterActive() const
-	{
-		return m_afterActive;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	inline bool Node::isDeactivating() const
-	{
-		return m_deactivating;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	inline bool Node::isFreeze() const
-	{
-		return m_freeze;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	inline bool Node::isEnable() const
-	{
-		return m_enable;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	inline Node * Node::getParent() const
-	{
-		return m_parent;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	inline bool Node::hasParent() const
-	{
-		return m_parent != nullptr;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	inline bool Node::isRenderable() const
-	{
-		if( m_invalidateRendering == true )
-		{
-			this->updateRendering_();
-		}
-
-		return m_rendering;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	inline TListNodeChild & Node::getChildren()
-	{
-		return m_children;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	inline const TListNodeChild & Node::getChildren() const
-	{
-		return m_children;
-	}
+    //////////////////////////////////////////////////////////////////////////
+    MENGINE_INLINE bool Node::isActivate() const
+    {
+        return m_active;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    MENGINE_INLINE bool Node::isAfterActive() const
+    {
+        return m_afterActive;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    MENGINE_INLINE bool Node::isDeactivating() const
+    {
+        return m_deactivating;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    MENGINE_INLINE bool Node::isFreeze() const
+    {
+        return m_freeze;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    MENGINE_INLINE bool Node::isEnable() const
+    {
+        return m_enable;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    MENGINE_INLINE Node * Node::getParent() const
+    {
+        return m_parent;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    MENGINE_INLINE bool Node::hasParent() const
+    {
+        return m_parent != nullptr;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    MENGINE_INLINE IntrusiveSlugListNodeChild & Node::getChildren()
+    {
+        return m_children;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    MENGINE_INLINE const IntrusiveSlugListNodeChild & Node::getChildren() const
+    {
+        return m_children;
+    }
     //////////////////////////////////////////////////////////////////////////
     template<class T>
     struct reinterpret_node_cast_void_t
@@ -322,9 +281,9 @@ namespace Mengine
     };
     //////////////////////////////////////////////////////////////////////////
     template<class T>
-    inline T reinterpret_node_cast( void * _node )
+    T reinterpret_node_cast( void * _node )
     {
-#ifndef NDEBUG
+#ifdef MENGINE_DEBUG
         if( _node == nullptr )
         {
             return nullptr;
@@ -344,41 +303,45 @@ namespace Mengine
 
         return reinterpret_cast<T>(_node);
     }
-	//////////////////////////////////////////////////////////////////////////
-	template<class T>
-	inline T static_node_cast( Node * _node )
-	{
-#ifndef NDEBUG
+    //////////////////////////////////////////////////////////////////////////
+    template<class T>
+    T node_static_cast( Node * _node )
+    {
+#ifdef MENGINE_DEBUG
         if( _node == nullptr )
         {
             return nullptr;
         }
 
-		if( dynamic_cast<T>(_node) == nullptr )
-		{
+        if( dynamic_cast<T>(_node) == nullptr )
+        {
             throw;
-		}
+        }
 #endif
 
-		return static_cast<T>(_node);
-	}
-	//////////////////////////////////////////////////////////////////////////
-	template<class T>
-	inline T static_node_cast( const Node * _node )
-	{
-#ifndef NDEBUG
+        return static_cast<T>(_node);
+    }
+    //////////////////////////////////////////////////////////////////////////
+    template<class T>
+    T node_static_cast( const Node * _node )
+    {
+#ifdef MENGINE_DEBUG
         if( _node == nullptr )
         {
             return nullptr;
         }
 
-		if( dynamic_cast<T>(_node) == nullptr )
-		{
+        if( dynamic_cast<T>(_node) == nullptr )
+        {
             throw;
-		}
+        }
 #endif
 
-		return static_cast<T>(_node);
-	}
+        return static_cast<T>(_node);
+    }
+	//////////////////////////////////////////////////////////////////////////
+	template<class T>
+	using IntrusiveNodePtr = IntrusivePtr<T, Node>;
+	//////////////////////////////////////////////////////////////////////////
 }
 

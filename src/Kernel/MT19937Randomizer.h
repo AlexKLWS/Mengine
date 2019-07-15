@@ -2,14 +2,12 @@
 
 #include "Interface/RandomizerInterface.h"
 
-#include "Core/ServantBase.h"
-
 #include <random>
 
 namespace Mengine
 {
     class MT19937Randomizer
-        : public ServantBase<RandomizerInterface>
+        : public RandomizerInterface
     {
     public:
         MT19937Randomizer();

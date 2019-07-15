@@ -4,15 +4,11 @@ ADD_FILTER(
 Application
 	Application.cpp
 	Application.h
+    ScenePrototypeGenerator.cpp
+    ScenePrototypeGenerator.h
 )
 
 SOURCE_GROUP( Engine )
-
-ADD_FILTER(
-Service\\\\Watchdog
-	Watchdog.cpp
-	Watchdog.h
-)
 
 ADD_FILTER(
 Layer2D
@@ -26,19 +22,7 @@ Motor\\\\Motor
 	Motor.h
 )
 
-ADD_FILTER(
-MousePickerTrap
-	MousePickerSystem.cpp
-	MousePickerSystem.h
-)
-
 SOURCE_GROUP( Surface )
-
-ADD_FILTER(
-Surface\\\\SurfaceVideo
-	SurfaceVideo.cpp
-	SurfaceVideo.h
-)
 
 ADD_FILTER(
 Surface\\\\SurfaceSound
@@ -72,6 +56,11 @@ Surface\\\\SurfaceTrackMatte
 
 SOURCE_GROUP( Object )
 
+ADD_FILTER(Shape\\\\ShapePacMan
+    ShapePacMan.cpp
+    ShapePacMan.h
+)
+
 ADD_FILTER(
 Shape\\\\ShapeQuad
 	ShapeQuad.cpp
@@ -86,15 +75,10 @@ Shape\\\\ShapeQuad
 SOURCE_GROUP( Object )
 
 ADD_FILTER(
-Object\\\\ParticleEmitter2
-	ParticleEmitter2.cpp
-	ParticleEmitter2.h
-)
-
-ADD_FILTER(
 Object\\\\HotSpot
 	HotSpot.cpp
 	HotSpot.h
+    HotSpotEventReceiverInterface.h
 	HotSpotPolygon.cpp
 	HotSpotPolygon.h
 	HotSpotImage.cpp
@@ -104,10 +88,7 @@ Object\\\\HotSpot
 	HotSpotShape.cpp
 	HotSpotShape.h
     HotSpotCircle.cpp
-    HotSpotCircle.h
-    
-    HotspotMousePickerVisitor.h
-    HotspotMousePickerVisitor.cpp
+    HotSpotCircle.h    
 )
 
 ADD_FILTER(
@@ -149,37 +130,9 @@ Object\\\\Grid2D
 )
 
 ADD_FILTER(
-Object\\\\Mesh2D
-	Mesh2D.cpp
-	Mesh2D.h
-)
-
-ADD_FILTER(
-Object\\\\Model3D
-	Model3D.cpp
-	Model3D.h
-)
-
-ADD_FILTER(
 Object\\\\Gyroscope
 	Gyroscope.cpp
 	Gyroscope.h
-)
-
-ADD_FILTER(
-Object\\\\Movie
-	Movie.cpp
-	Movie.h	
-    MovieSlot.cpp
-    MovieSlot.h
-    MovieSceneEffect.cpp
-    MovieSceneEffect.h
-	MovieInternalObject.cpp
-	MovieInternalObject.h
-    MovieNodeExtra.cpp
-    MovieNodeExtra.h
-    MovieEvent.cpp
-    MovieEvent.h
 )
 
 ADD_FILTER(
@@ -190,6 +143,9 @@ Object\\\\TextField
 	TextLine.h
     TextChar.cpp
     TextChar.h
+    TextRenderChunk.h
+    TextDebug.cpp
+    TextDebug.h
 )
 
 ADD_FILTER(
@@ -199,44 +155,22 @@ Object\\\\Window
 )
 
 ADD_FILTER(
-Player
-	Player.cpp
-	Player.h
-    GlobalAffectorable.cpp
-    GlobalAffectorable.h    
-	GlobalHandleSystem.cpp
-	GlobalHandleSystem.h
-)
-
-ADD_FILTER(
 Resource\\\\File
 	ResourceFile.cpp
 	ResourceFile.h
 )
 
 ADD_FILTER(
-Resource\\\\Movie
-	ResourceMovie.cpp
-	ResourceMovie.h
+Resource\\\\ImageSequence
+	ResourceImageSequence.cpp
+	ResourceImageSequence.h
 )
 
 ADD_FILTER(
-Resource\\\\Model3D
-	ResourceModel3D.cpp
-	ResourceModel3D.h
-)
-
-ADD_FILTER(
-Resource\\\\InternalObject
-	ResourceInternalObject.cpp
-	ResourceInternalObject.h
-)
-
-ADD_FILTER(
-Resource\\\\Animation
-	ResourceAnimation.cpp
-	ResourceAnimation.h
-)
+Resource\\\\ResourceMusic
+	ResourceMusic.h
+	ResourceMusic.cpp
+)	
 
 ADD_FILTER(
 Resource\\\\Cursor
@@ -248,13 +182,9 @@ Resource\\\\Cursor
 )
 
 ADD_FILTER(
-Resource\\\\Particle
-	ResourceParticle.cpp
-	ResourceParticle.h
-)
-
-ADD_FILTER(
 Resource\\\\Image
+	ResourceImageData.cpp
+	ResourceImageData.h
 	ResourceImageSolid.h
     ResourceImageSolid.cpp
 	ResourceImageDefault.cpp
@@ -278,12 +208,6 @@ Resource\\\\Shape
 )
 
 ADD_FILTER(
-Resource\\\\Video
-	ResourceVideo.cpp
-	ResourceVideo.h
-)
-
-ADD_FILTER(
 Resource\\\\Window
 	ResourceWindow.cpp
 	ResourceWindow.h
@@ -300,44 +224,9 @@ Resource\\\\HIT
 	ResourceHIT.h
 )
 
-
-ADD_FILTER(
-Manager\\\\Resource
-	ResourceManager.cpp
-	ResourceManager.h
-)
-
-ADD_FILTER(
-Manager\\\\Prototype
-	PrototypeManager.cpp
-	PrototypeManager.h
-)
-
-ADD_FILTER(
-Manager\\\\Node
-	NodeManager.cpp
-	NodeManager.h
-)
-
-ADD_FILTER(
-Manager\\\\Account
-	AccountManager.cpp	
-	AccountManager.h
-  	Account.cpp
-	Account.h
-)
-
-ADD_FILTER(
-Utils
-	VersionInfo.h
-)
-
-INCLUDE_DIRECTORIES( 
-    ${SOURCE_DIR}/Utils 
+INCLUDE_DIRECTORIES(
     ${THIRDPARTY_DIR}
     ${THIRDPARTY_DIR}/pybind/include
-    ${THIRDPARTY_DIR}/metabuf
-    ${THIRDPARTY_DIR}/stdex/include
     ${THIRDPARTY_DIR}/utf8/source
     ${THIRDPARTY_DIR}/tinyini/include
     ${THIRDPARTY_DIR}/libmath/include
@@ -349,20 +238,7 @@ SET( APPLICATION_DEPENDENCIES
  ${APPLICATION_DEPENDENCIES}
  ${MY_LIB_NAME}  
  Kernel
- Core
- Logger
- Codec
- Factory
- Archive
- Metacode 
- ServiceText
- ServiceGraveyard
- ServiceRender
- ServicePackage
- ServiceProfiler
- ServiceUserdata
- ServiceTimeline
- ServiceNotification
+ Metacode
 )
 
 SET( APPLICATION_DEPENDENCIES

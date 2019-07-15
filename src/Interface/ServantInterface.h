@@ -1,10 +1,8 @@
 #pragma once
 
-#include "Config/Typedef.h"
+#include "Kernel/Factorable.h"
 
-#include "Factory/Factorable.h"
-
-#include "Core/IntrusivePtr.h"
+#include "Kernel/IntrusivePtr.h"
 
 namespace Mengine
 {
@@ -13,7 +11,7 @@ namespace Mengine
         : public Factorable
     {
     public:
-        ServantInterface()
+        ServantInterface() noexcept
         {
         };
 
@@ -21,7 +19,7 @@ namespace Mengine
         {
         };
     };
-	//////////////////////////////////////////////////////////////////////////
-	typedef IntrusivePtr<ServantInterface> ServantInterfacePtr;
-	//////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////
+    typedef IntrusivePtr<ServantInterface> ServantInterfacePtr;
+    //////////////////////////////////////////////////////////////////////////
 }

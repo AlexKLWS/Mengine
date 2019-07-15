@@ -4,12 +4,10 @@
 
 #include "Kernel/Observable.h"
 
-#include "Core/Resolution.h"
-#include "Core/Viewport.h"
-#include "Core/ConstString.h"
-#include "Core/ServiceBase.h"
-
-#include "Logger/Logger.h"
+#include "Kernel/Resolution.h"
+#include "Kernel/Viewport.h"
+#include "Kernel/ConstString.h"
+#include "Kernel/ServiceBase.h"
 
 #include "math/vec4.h"
 
@@ -17,226 +15,221 @@
 
 namespace Mengine
 {
-	typedef IntrusivePtr<class ResourceCursor> ResourceCursorPtr;
+    typedef IntrusivePtr<class ResourceCursor> ResourceCursorPtr;
 
-	class Application 
-		: public ServiceBase<ApplicationInterface>
+    class Application
+        : public ServiceBase<ApplicationInterface>
         , public Observable
-	{
-	public:
-		Application();
-		~Application() override;
+    {
+    public:
+        Application();
+        ~Application() override;
 
-	public:
-		bool _initializeService() override;
-		void _finalizeService() override;
+    public:
+        bool _initializeService() override;
+        void _finalizeService() override;
 
-	public:
-		void parseArguments( const String & _args );
+    public:
+        bool getAllowFullscreenSwitchShortcut() const override;
 
-	public:
-		bool getAllowFullscreenSwitchShortcut() const override;
+    public:
+        bool initializeGame( const FileGroupInterfacePtr & _fileGroup, const FilePath & _resourceIniPath ) override;
 
-	public:
-		bool initializeGame( const FileGroupInterfacePtr & _category, const FilePath & _resourceIniPath ) override;
+    public:
+        void changeWindowResolution( const Resolution & _resolution ) override;
 
-	public:
-		void changeWindowResolution( const Resolution & _resolution ) override;
-
-	public:
-		void setFullscreenMode( bool _fullscreen ) override;
-		bool getFullscreenMode() const override;
+    public:
+        void setFullscreenMode( bool _fullscreen ) override;
+        bool getFullscreenMode() const override;
 
         uint32_t getWindowBits() const override;
-        int getWindowFSAAType() const override;
-        int getWindowFSAAQuality() const override;
-		
-	public:
-		bool isFocus() const override;
+        int32_t getWindowFSAAType() const override;
+        int32_t getWindowFSAAQuality() const override;
 
-	public:
-		void setNopause( bool _nopause ) override;
-		bool getNopause() const override;
+    public:
+        bool isFocus() const override;
+        bool isFrozen() const override;
 
-	protected:
-		bool registerBaseNodeTypes_();
-		bool registerBaseResourceTypes_();
-		bool registerSceneGenerator_();
+    public:
+        void setNopause( bool _nopause ) override;
+        bool getNopause() const override;
 
-	public:
-		bool createRenderWindow() override;
+    protected:
+        bool registerBaseNodeTypes_();
+        bool registerBaseResourceTypes_();
+        bool registerSceneGenerator_();
 
-		//void screenshot( const RenderTextureInterfacePtr & _renderTargetImage, const mt::vec4f & _rect );
+    protected:
+        void unregisterBaseNodeTypes_();
+        void unregisterBaseResourceTypes_();
+        void unregisterSceneGenerator_();
 
-		void quit() override;
+    public:
+        bool createRenderWindow() override;
+        void quit() override;
 
-	public:
-		void calcWindowResolution( Resolution & _windowResolution ) const override;
+    public:
+        void calcWindowResolution( Resolution & _windowResolution ) const override;
 
-		const Resolution & getCurrentResolution() const override;
+        const Resolution & getCurrentResolution() const override;
 
-		const Viewport & getRenderViewport() const override;
-		const Resolution & getContentResolution() const override;
+        const Viewport & getRenderViewport() const override;
+        const Resolution & getContentResolution() const override;
 
-		void getGameViewport( float & _aspect, Viewport & _viewport ) const override;
+        void getGameViewport( float & _aspect, Viewport & _viewport ) const override;
 
-	public:
-		bool render() override;
-		void flush() override;
-		bool beginUpdate() override;
-		void tick( float _timing ) override;
-		void endUpdate() override;
-		void setFocus( bool _focus ) override;
-		void setFreeze( bool _freeze ) override;
-		void close() override;
+    public:
+        bool render() override;
+        void flush() override;
+        bool beginUpdate() override;
+        void tick( float _time ) override;
+        void endUpdate() override;
+        void setFocus( bool _focus ) override;
+        void setFreeze( bool _freeze ) override;
+        void close() override;
 
-		void turnSound( bool _turn ) override;
+        void turnSound( bool _turn ) override;
 
-	public:
-		bool keyEvent( const InputKeyEvent & _event ) override;
-		bool textEvent( const InputTextEvent & _event ) override;
+    public:
+        bool keyEvent( const InputKeyEvent & _event ) override;
+        bool textEvent( const InputTextEvent & _event ) override;
 
-		bool mouseButtonEvent( const InputMouseButtonEvent& _event ) override;
-		bool mouseMove( const InputMouseMoveEvent& _event ) override;
-		bool mouseWheel( const InputMouseWheelEvent & _event ) override;
-		void mousePosition( const InputMousePositionEvent & _event ) override;
-		void mouseEnter( const InputMousePositionEvent & _event ) override;
-		void mouseLeave( const InputMousePositionEvent & _event ) override;
+        bool mouseButtonEvent( const InputMouseButtonEvent& _event ) override;
+        bool mouseMove( const InputMouseMoveEvent& _event ) override;
+        bool mouseWheel( const InputMouseWheelEvent & _event ) override;
+        void mousePosition( const InputMousePositionEvent & _event ) override;
+        void mouseEnter( const InputMouseEnterEvent & _event ) override;
+        void mouseLeave( const InputMouseLeaveEvent & _event ) override;
 
-	public:
-		void paint() override;
+    public:
+        void paint() override;
 
-	public:
-		void setParticleEnable( bool _enabled ) override;
-		bool getParticleEnable() const override;
+    public:
+        void setParticleEnable( bool _enabled ) override;
+        bool getParticleEnable() const override;
 
-		void setTextEnable( bool _enable ) override;
-		bool getTextEnable() const override;
+        void setTextEnable( bool _enable ) override;
+        bool getTextEnable() const override;
 
         void setVideoEnable( bool _enabled ) override;
         bool getVideoEnable() const override;
 
-	public:
-		void setInputMouseButtonEventBlock( bool _block ) override;
-		bool getInputMouseButtonEventBlock() const override;
+    public:
+        void setInputMouseButtonEventBlock( bool _block ) override;
+        bool getInputMouseButtonEventBlock() const override;
 
-	public:
-		void minimizeWindow() override;
+    public:
+        void minimizeWindow() override;
 
         uint32_t getDebugMask() const override;
 
-	public:
-		const WString & getCompanyName() const override;
-		const WString & getProjectName() const override;
+    public:
+        void getCompanyName( Char * _companyName ) const override;
+        void getProjectName( Char * _projectName ) const override;
 
-	public:
-		const ConstString & getProjectCodename() const override;
-		uint32_t getProjectVersion() const override;
+    public:
+        const ConstString & getProjectCodename() const override;
+        uint32_t getProjectVersion() const override;
 
-	public:
-		void setLocale( const ConstString & _locale ) override;
-		const ConstString & getLocale() const override;
+    public:
+        void setLocale( const ConstString & _locale ) override;
+        const ConstString & getLocale() const override;
 
-	public:
-		const Resolution & getWindowResolution() const;
+    public:
+        const Resolution & getWindowResolution() const;
 
-	public:
-		void setFixedContentResolution( bool _fixedContetResolution ) override; 
-		bool getFixedContentResolution() const override;
+    public:
+        void setFixedContentResolution( bool _fixedContetResolution ) override;
+        bool getFixedContentResolution() const override;
 
-	public:
-		void setFixedDisplayResolution( bool _fixedDisplayResolution ) override;
-		bool getFixedDisplayResolution() override;
+    public:
+        void setFixedDisplayResolution( bool _fixedDisplayResolution ) override;
+        bool getFixedDisplayResolution() override;
 
-	public:
-		bool isValidWindowMode() const override;		
+    public:
+        bool isValidWindowMode() const override;
 
-	public:
-		void updateNotification();
-		void setVSync( bool _vsync ) override;
-		bool getVSync() const override;
-		void setCursorMode( bool _mode ) override;
-		bool getCursorMode() const override;
-		void setCursorIcon( const ConstString & _resourceName ) override;
+    public:
+        void updateNotification();
+        void setVSync( bool _vsync ) override;
+        bool getVSync() const override;
+        void setCursorMode( bool _mode ) override;
+        bool getCursorMode() const override;
+        void setCursorIcon( const ConstString & _resourceName ) override;
 
-		void showKeyboard() override;
-		void hideKeyboard() override;
+        void showKeyboard() override;
+        void hideKeyboard() override;
 
-	public:
-		void debugPause( bool _pause ) override;
-		
-	protected:
-		bool findBestAspectViewport_( float _aspect, float & _bestAspect, Viewport & _viewport ) const; 
+    public:
+        void debugPause( bool _pause ) override;
 
-	protected:		
-		void calcRenderViewport_( const Resolution & _resolution, Viewport & _viewport );
-		void invalidateWindow_();
+    protected:
+        bool findBestAspectViewport_( float _aspect, float & _bestAspect, Viewport & _viewport ) const;
 
-	protected:
-		void notifyDebugOpenFile_( const char * _folder, const char * _fileName );
+    protected:
+        void calcRenderViewport_( const Resolution & _resolution, Viewport & _viewport );
+        void invalidateWindow_();
 
-	protected:
-		Resolution m_currentResolution;
+    protected:
+        void updateDebugOpenFile_();
+        void notifyDebugOpenFile_( const Char * _folder, const Char * _fileName, bool _streaming );
 
-		Viewport m_renderViewport;
+    protected:
+        Resolution m_currentResolution;
 
-		Viewport m_gameViewport;
+        Viewport m_renderViewport;
 
-		bool m_particleEnable;
-		bool m_textEnable;
+        bool m_particleEnable;
+        bool m_textEnable;
         bool m_videoEnable;
 
-		bool m_focus;
-		bool m_freeze;
-		bool m_update;
-		bool m_nopause;
+        bool m_focus;
+        bool m_freeze;
+        bool m_update;
+        bool m_nopause;
 
-		Resolution m_windowResolution;
-		uint32_t m_bits;
-		bool m_fullscreen;
-		bool m_nofullscreen;
-		bool m_vsync;
+        Resolution m_windowResolution;
+        uint32_t m_bits;
+        bool m_fullscreen;
+        bool m_nofullscreen;
+        bool m_vsync;
 
-		bool m_textureFiltering;
-		int	m_FSAAType;
-		int m_FSAAQuality;
+        int32_t	m_FSAAType;
+        int32_t m_FSAAQuality;
 
-		Resolution m_contentResolution;
+        Resolution m_contentResolution;
 
-		typedef Map<float, Viewport> TMapAspectRatioViewports;
-		TMapAspectRatioViewports m_aspectRatioViewports;
+        typedef Map<float, Viewport> MapAspectRatioViewports;
+        MapAspectRatioViewports m_aspectRatioViewports;
 
-		bool m_fixedContentResolution;
-		bool m_fixedDisplayResolution;
-		bool m_createRenderWindow;
+        uint32_t m_updateRevision;
+
+        bool m_fixedContentResolution;
+        bool m_fixedDisplayResolution;
+        bool m_createRenderWindow;
 
         uint32_t m_debugMask;
 
-		bool m_resetTiming;
-		float m_phycisTiming;
-		float m_maxTiming;
+        float m_maxFrameTime;
 
-		ResourceCursorPtr m_cursorResource;
+        ResourceCursorPtr m_cursorResource;
 
-		WString m_companyName;
-		WString m_projectName;
+        String m_companyName;
+        String m_projectName;
 
-		ConstString m_locale;
+        ConstString m_locale;
 
-		ConstString m_projectCodename;
-		uint32_t m_projectVersion;
+        ConstString m_projectCodename;
+        uint32_t m_projectVersion;
 
-		bool m_invalidateVsync;
-		bool m_cursorMode;
-		bool m_invalidateCursorMode;
-		bool m_mouseEnter;
+        bool m_invalidateVsync;
+        bool m_cursorMode;
+        bool m_invalidateCursorMode;
+        bool m_mouseEnter;
 
-		bool m_inputMouseButtonEventBlock;
+        bool m_inputMouseButtonEventBlock;
 
-		bool m_resourceCheck;
-
-		bool m_debugPause;
-
-		bool m_debugFileOpen;
-	};
+        bool m_debugPause;
+        bool m_debugFileOpen;
+    };
 }

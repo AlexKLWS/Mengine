@@ -1,50 +1,50 @@
 #pragma once
 
-#include "Core/Mixin.h"
-#include "Core/IntrusivePtr.h"
+#include "Kernel/Mixin.h"
 
 #include "math/box2.h"
 
 namespace Mengine
 {
-	class BoundingBox
+    class BoundingBox
         : public Mixin
-	{
-	public:
-		BoundingBox();
+    {
+    public:
+        BoundingBox();
         ~BoundingBox();
 
-	public:
-		inline const mt::box2f & getBoundingBox() const;
+    public:
+        MENGINE_INLINE const mt::box2f * getBoundingBox() const;
 
-	protected:
-		inline void invalidateBoundingBox() const;
+    public:
+        MENGINE_INLINE void invalidateBoundingBox() const;
 
-	protected:
-		void updateBoundingBox() const;
+    protected:
+        void updateBoundingBox() const;
 
-	protected:
-		virtual void _updateBoundingBox( mt::box2f & _boundingBox ) const;
+    protected:
+        virtual void _updateBoundingBox( mt::box2f & _boundingBox, mt::box2f ** _boundingBoxCurrent ) const;
 
-	protected:
-		mutable mt::box2f m_boundingBox;
-		mutable bool m_invalidateBoundingBox;
-	};
+    protected:
+        mutable mt::box2f m_boundingBox;
+        mutable mt::box2f * m_boundingBoxCurrent;
+        mutable bool m_invalidateBoundingBox;
+    };
     //////////////////////////////////////////////////////////////////////////
     typedef IntrusivePtr<BoundingBox> BoundingBoxPtr;
-	//////////////////////////////////////////////////////////////////////////
-	inline void BoundingBox::invalidateBoundingBox() const
-	{
-		m_invalidateBoundingBox = true;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	inline const mt::box2f & BoundingBox::getBoundingBox() const
-	{
+    //////////////////////////////////////////////////////////////////////////
+    MENGINE_INLINE void BoundingBox::invalidateBoundingBox() const
+    {
+        m_invalidateBoundingBox = true;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    MENGINE_INLINE const mt::box2f * BoundingBox::getBoundingBox() const
+    {
         if( m_invalidateBoundingBox == true )
-		{		
-			this->updateBoundingBox();
-		}
+        {
+            this->updateBoundingBox();
+        }
 
-		return m_boundingBox;
-	}
+        return m_boundingBoxCurrent;
+    }
 }

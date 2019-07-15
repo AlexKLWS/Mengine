@@ -1,41 +1,49 @@
 #pragma once
 
 #include "Kernel/Node.h"
+#include "Kernel/BaseRender.h"
+#include "Kernel/Materialable.h"
 
-#include "Core/RenderVertex2D.h"
+#include "Kernel/RenderVertex2D.h"
 
 namespace Mengine
 {
-	class Point
-		: public Node
-	{
-	public:
-		Point();
+    class Point
+        : public Node
+        , public BaseRender
+        , public Materialable
+    {
+        DECLARE_VISITABLE( Node );
+        DECLARE_RENDERABLE();
 
-	public:
-		void setLinkedPoint( Point * _linked );
-		void removeLinkedPoint();
-		Point * getLinkedPoint() const;
+    public:
+        Point();
+        ~Point() override;
 
-	public:
-		void setWidth( float _width );
-		float getWidth() const;
+    public:
+        void setLinkedPoint( Point * _linked );
+        void removeLinkedPoint();
+        Point * getLinkedPoint() const;
 
-	protected:
-		void _destroy() override;
+    public:
+        void setWidth( float _width );
+        float getWidth() const;
 
-	protected:
-		void _render( RenderServiceInterface * _renderService, const RenderContext * _state ) override;
+    protected:
+        void _destroy() override;
 
-	protected:
-		void _debugRender( RenderServiceInterface * _renderService, const RenderContext * _state ) override;
+    protected:
+        RenderMaterialInterfacePtr _updateMaterial() const override;
 
-	protected:
-		Point * m_linked;
-		bool m_owner;
+    protected:
+        void render( const RenderContext * _context ) const override;
 
-		float m_width;
+    protected:
+        Point * m_linked;
+        bool m_owner;
 
-		RenderVertex2D m_vertices[4];
-	};
+        float m_width;
+
+        mutable RenderVertex2D m_vertices[4];
+    };
 }

@@ -1,51 +1,48 @@
 #include "ResourceCursorICO.h"
 
-#include "Metacode/Metacode.h"
+#include "Interface/FileServiceInterface.h"
 
-#include "Interface/FileSystemInterface.h"
-
-#include "Core/MemoryHelper.h"
-
-#include "Logger/Logger.h"
+#include "Kernel/MemoryHelper.h"
+#include "Kernel/Document.h"
+#include "Kernel/Logger.h"
 
 namespace Mengine
 {
-	//////////////////////////////////////////////////////////////////////////
-	ResourceCursorICO::ResourceCursorICO()
-	{
-	}
-	//////////////////////////////////////////////////////////////////////////
-	bool ResourceCursorICO::_loader( const Metabuf::Metadata * _meta )
-	{
-        const Metacode::Meta_Data::Meta_DataBlock::Meta_ResourceCursorICO * metadata
-            = static_cast<const Metacode::Meta_Data::Meta_DataBlock::Meta_ResourceCursorICO *>(_meta);
+    //////////////////////////////////////////////////////////////////////////
+    ResourceCursorICO::ResourceCursorICO()
+    {
+    }
+    //////////////////////////////////////////////////////////////////////////
+    ResourceCursorICO::~ResourceCursorICO()
+    {
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void ResourceCursorICO::setFilePath( const FilePath & _filePath )
+    {
+        m_filePath = _filePath;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    bool ResourceCursorICO::_compile()
+    {
+        const FileGroupInterfacePtr & fileGroup = this->getFileGroup();
 
-        m_path = metadata->get_File_Path();
+        m_buffer = Helper::createMemoryFile( fileGroup, m_filePath, false, MENGINE_DOCUMENT_FUNCTION );
 
         return true;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	bool ResourceCursorICO::_compile()
-	{
-		const FileGroupInterfacePtr & category = this->getCategory();
-		
-		m_buffer = Helper::createMemoryFile( category, m_path, false, __FILE__, __LINE__ );
-
-		return true;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	void ResourceCursorICO::_release()
-	{
-		m_buffer = nullptr;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	const FilePath & ResourceCursorICO::getPath() const
-	{
-		return m_path;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	const MemoryInterfacePtr & ResourceCursorICO::getBuffer() const
-	{
-		return m_buffer;
-	}
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void ResourceCursorICO::_release()
+    {
+        m_buffer = nullptr;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    const FilePath & ResourceCursorICO::getFilePath() const
+    {
+        return m_filePath;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    const MemoryInterfacePtr & ResourceCursorICO::getBuffer() const
+    {
+        return m_buffer;
+    }
 }

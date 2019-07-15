@@ -1,35 +1,47 @@
 #pragma once
 
 #include "Kernel/Node.h"
-#include "Core/RenderVertex2D.h"
+#include "Kernel/BaseRender.h"
+#include "Kernel/Materialable.h"
+
+#include "Kernel/RenderVertex2D.h"
 
 namespace Mengine
 {
-	class Line
-		: public Node
-	{
-	public:
-		Line();
+    class Line
+        : public Node
+        , public BaseRender
+        , public Materialable
+    {
+        DECLARE_VISITABLE( Node );
+        DECLARE_RENDERABLE();
 
-	public:
-		void setFrom( const mt::vec3f & _value );
-		const mt::vec3f & getFrom() const;
+    public:
+        Line();
+        ~Line() override;
 
-		void setTo( const mt::vec3f & _value );
-		const mt::vec3f & getTo() const;
+    public:
+        void setFrom( const mt::vec3f & _value );
+        const mt::vec3f & getFrom() const;
 
-		void setWidth( float _width );
-		float getWidth() const;
+        void setTo( const mt::vec3f & _value );
+        const mt::vec3f & getTo() const;
 
-	protected:
-		void _render( RenderServiceInterface * _renderService, const RenderContext * _state ) override;
+        void setWidth( float _width );
+        float getWidth() const;
 
-	protected:
-		mt::vec3f m_from;
-		mt::vec3f m_to;
+    protected:
+        RenderMaterialInterfacePtr _updateMaterial() const override;
 
-		float m_width;
+    protected:
+        void render( const RenderContext * _context ) const override;
 
-		RenderVertex2D m_vertices[4];
-	};
+    protected:
+        mt::vec3f m_from;
+        mt::vec3f m_to;
+
+        float m_width;
+
+        mutable RenderVertex2D m_vertices[4];
+    };
 }

@@ -6,16 +6,17 @@
 
 namespace Mengine
 {
-	//////////////////////////////////////////////////////////////////////////
-	class ResourceCursor
-		: public Resource
-	{
-		DECLARE_VISITABLE( Resource );
+    //////////////////////////////////////////////////////////////////////////
+    class ResourceCursor
+        : public Resource
+    {
+        DECLARE_VISITABLE( Resource );
 
-	public:
-		virtual const FilePath & getPath() const = 0;
-		virtual const MemoryInterfacePtr & getBuffer() const = 0;
-	};
-	//////////////////////////////////////////////////////////////////////////
-	typedef IntrusivePtr<ResourceCursor> ResourceCursorPtr;
+    public:
+        virtual const FilePath & getFilePath() const = 0;
+        virtual const MemoryInterfacePtr & getBuffer() const = 0;
+    };
+    //////////////////////////////////////////////////////////////////////////
+    typedef IntrusivePtr<ResourceCursor> ResourceCursorPtr;
+    //////////////////////////////////////////////////////////////////////////
 }

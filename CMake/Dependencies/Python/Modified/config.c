@@ -4,51 +4,53 @@
 extern "C" {
 #endif
 
-//extern void PyMarshal_Init(void);
-extern void initimp(void);
-extern void initgc(void);
-//extern void init_ast(void);
-extern void initunicodedata(void);
-extern void initmath(void);
-extern void init_sre( void );
-extern void init_struct( void );
-//extern void initnt(void);
-//extern void initcPickle(void);
-//extern void initcStringIO(void);
-extern void init_weakref(void);
+    extern void initimp( void );
+    extern void initgc( void );
+    extern void initunicodedata( void );
+    extern void initmath( void );
+    extern void init_sre( void );
+    extern void init_struct( void );
+    extern void init_weakref( void );
+    extern void initbinascii( void );
+    extern void initzlib( void );
 
-struct _inittab _PyImport_Inittab[] = {
+#if defined(WIN32) && !defined(NDEBUG)
+    extern void PyMarshal_Init( void );
+    extern void initcStringIO( void );
+    extern void init_lsprof( void );
+    extern void initerrno( void );
+    extern void initnt( void );
+    extern void init_functools( void );
+    extern void inittime( void );
+#endif
 
-    /* -- ADDMODULE MARKER 2 -- */
-    //{"nt", initnt}, /* Use the NT os functions, not posix */
+    struct _inittab _PyImport_Inittab[] = {
+    { "imp", initimp },
+    { "math", initmath },
+    { "_sre", init_sre },
+    { "_struct", init_struct },
+    { "__main__", NULL },
+    { "__builtin__", NULL },
+    { "sys", NULL },
+    { "exceptions", NULL },
+    { "binascii", initbinascii },
+    { "zlib", initzlib },
+    { "gc", initgc },
+    { "_weakref", init_weakref },
 
-	/* This module lives in marshal.c */
-	//{"marshal", PyMarshal_Init},
+#if defined(WIN32) && !defined(NDEBUG)
+    { "cStringIO", initcStringIO },
+    { "marshal", PyMarshal_Init },
+    { "_lsprof", init_lsprof },
+    { "errno", initerrno },
+    { "nt", initnt },
+    { "_functools", init_functools },
+    { "time", inittime},
+#endif
 
-	/* This lives in import.c */
-	{"imp", initimp},
-    {"math", initmath},
-	{"_sre", init_sre},
-	{"_struct", init_struct },
-
-	/* This lives in Python/Python-ast.c */
-	//{"_ast", init_ast},
-	/* These entries are here for sys.builtin_module_names */
-	{"__main__", NULL},
-	{"__builtin__", NULL},
-	{"sys", NULL},
-	{"exceptions", NULL},
-
-	/* This lives in gcmodule.c */
-	{"gc", initgc},
-    
-    //{"cPickle", initcPickle},
-    //{"cStringIO", initcStringIO},
-    {"_weakref", init_weakref},
-    
-	/* Sentinel */
-	{0, 0}
-};
+    /* Sentinel */
+    { 0, 0 }
+    };
 
 #ifdef __cplusplus
 }

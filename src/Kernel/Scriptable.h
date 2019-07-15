@@ -1,33 +1,47 @@
 #pragma once
 
-#include "Core/IntrusivePtr.h"
-#include "Core/Mixin.h"
+#include "Interface/ScriptWrapperInterface.h"
 
-#include "pybind/bindable.hpp"
+#include "Kernel/IntrusivePtr.h"
+#include "Kernel/Mixin.h"
+
+namespace pybind
+{
+    class kernel_interface;
+}
 
 namespace Mengine
 {
     //////////////////////////////////////////////////////////////////////////
-    typedef IntrusivePtr<class ScriptWrapperInterface> ScriptWrapperInterfacePtr;
-    //////////////////////////////////////////////////////////////////////////
-	class Scriptable
-		: public Mixin
-        , public pybind::bindable
-	{	
-	public:
-		Scriptable();
-		~Scriptable() override;
+    class Scriptable
+        : public Mixin
+    {
+    public:
+        Scriptable();
+        ~Scriptable() override;
 
-	public:
-		void setScriptWrapper( const ScriptWrapperInterfacePtr & _scriptWrapper );		
+    public:
+        void setEmbed( pybind::kernel_interface * _kernel, PyObject * _embed );
+        PyObject * getEmbed( pybind::kernel_interface * _kernel );
+        bool isEmbed() const;
+
+    public:
+        void clearEmbed();
+        void unwrap();
+
+    public:
+        void setScriptWrapper( const ScriptWrapperInterfacePtr & _scriptWrapper );
         const ScriptWrapperInterfacePtr & getScriptWrapper() const;
-        	
-    protected:
-		PyObject * _embedded() override;
 
-	protected:
-		ScriptWrapperInterfacePtr m_scriptWrapper;
-	};
+    protected:
+        PyObject * _embedded( pybind::kernel_interface * _kernel );
+
+    protected:
+        ScriptWrapperInterfacePtr m_scriptWrapper;
+
+        pybind::kernel_interface * m_kernel;
+        PyObject * m_embed;
+    };
     //////////////////////////////////////////////////////////////////////////
     typedef IntrusivePtr<Scriptable> ScriptablePtr;
     //////////////////////////////////////////////////////////////////////////

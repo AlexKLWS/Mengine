@@ -1,13 +1,13 @@
 #include "HotSpotShape.h"
 
-#include "Interface/ResourceInterface.h"
-#include "Interface/StringizeInterface.h"
+#include "Interface/ResourceServiceInterface.h"
+#include "Interface/StringizeServiceInterface.h"
 
 #include "ResourceShape.h"
 
-#include "Logger/Logger.h"
-
-#include "Core/String.h"
+#include "Kernel/Logger.h"
+#include "Kernel/String.h"
+#include "Kernel/AssertionMemoryPanic.h"
 
 namespace Mengine
 {
@@ -27,21 +27,16 @@ namespace Mengine
             return false;
         }
 
-        if( m_resourceShape == nullptr )
-        {
-            LOGGER_ERROR("HotSpotShape::_compile: '%s' resource is null"
-                , this->getName().c_str()
-                );
+        MENGINE_ASSERTION_MEMORY_PANIC( m_resourceShape, false, "'%s' resource is null"
+            , this->getName().c_str()
+        );
 
-            return false;
-        }
-
-        if( m_resourceShape.compile() == false )
+        if( m_resourceShape->compile() == false )
         {
-            LOGGER_ERROR("HotSpotShape::_compile: '%s' resource '%s' not compile"
+            LOGGER_ERROR( "'%s' resource '%s' not compile"
                 , this->getName().c_str()
                 , m_resourceShape->getName().c_str()
-                );
+            );
 
             return false;
         }
@@ -55,25 +50,23 @@ namespace Mengine
     //////////////////////////////////////////////////////////////////////////
     void HotSpotShape::_release()
     {
-        m_resourceShape.release();
+        m_resourceShape->release();
 
         HotSpotPolygon::_release();
     }
     //////////////////////////////////////////////////////////////////////////
-	void HotSpotShape::setResourceShape( const ResourceShapePtr & _resourceShape )
+    void HotSpotShape::setResourceShape( const ResourceShapePtr & _resourceShape )
     {
         if( m_resourceShape == _resourceShape )
         {
             return;
         }
 
-        m_resourceShape = _resourceShape;
-
-        this->recompile();
+        this->recompile( [this, _resourceShape]() {m_resourceShape = _resourceShape; } );
     }
     //////////////////////////////////////////////////////////////////////////
-	const ResourceShapePtr & HotSpotShape::getResourceShape() const
+    const ResourceShapePtr & HotSpotShape::getResourceShape() const
     {
         return m_resourceShape;
     }
-}	
+}

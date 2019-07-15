@@ -1,60 +1,45 @@
 #pragma once
 
-#include "Interface/SoundSystemInterface.h"
+#include "Interface/SoundBufferInterface.h"
 
 #include "Kernel/Resource.h"
-#include "Kernel/ResourceCacher.h"
+#include "Kernel/Content.h"
 
 namespace Mengine
 {
-	class ResourceSound
-		: public Resource
-	{
-		DECLARE_VISITABLE( Resource );
+    class ResourceSound
+        : public Resource
+        , public Content
+    {
+        DECLARE_VISITABLE( Resource );
+        DECLARE_CONTENTABLE();
 
-	public:
-		ResourceSound();
+    public:
+        ResourceSound();
+        ~ResourceSound() override;
 
-	public:
-		void setFilePath( const FilePath & _path );
-		const FilePath& getFilePath() const;
-				
-		void setCodecType( const ConstString & _codec );
-		const ConstString & getCodecType() const;
-		
-	public:
-		bool isStreamable() const;
-		float getDefaultVolume() const;
+    public:
+        void setStreamable( bool _streamable );
+        bool isStreamable() const;
 
-	public:
-		bool _loader( const Metabuf::Metadata * _parser ) override;
-        bool _convert() override;
+        void setDefaultVolume( float _defaultVolume );
+        float getDefaultVolume() const;
+
+    public:
+        SoundBufferInterfacePtr createSoundBuffer() const;
 
     protected:
-        bool _isValid() const override;
-
-	public:
-		SoundBufferInterfacePtr createSoundBuffer() const;
-
-	protected:
-		bool _compile() override;
-		void _release() override;
+        bool _compile() override;
+        void _release() override;
 
     protected:
-        void _debugIncrementReference() override;
-        void _debugDecrementReference() override;
+        float m_defaultVolume;
 
-	protected:
-		FilePath m_filePath;
+        SoundBufferInterfacePtr m_soundBufferNoStreamableCache;
 
-		ConstString m_codecType;
-		ConstString m_converterType;
-		float m_defaultVolume;
-
-		SoundBufferInterfacePtr m_soundBufferNoStreamableCache;
-
-		bool m_isStreamable;
-	};
-	//////////////////////////////////////////////////////////////////////////
-	typedef IntrusivePtr<ResourceSound> ResourceSoundPtr;
+        bool m_isStreamable;
+    };
+    //////////////////////////////////////////////////////////////////////////
+    typedef IntrusiveResourcePtr<ResourceSound> ResourceSoundPtr;
+    //////////////////////////////////////////////////////////////////////////
 }

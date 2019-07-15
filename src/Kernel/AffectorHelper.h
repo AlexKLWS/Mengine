@@ -3,183 +3,124 @@
 #include "Config/Lambda.h"
 
 #include "Kernel/Affector.h"
-
-#include "Factory/Factory.h"
-#include "Factory/FactoryPool.h"
-
-#include "Core/ValueInterpolator.h"
+#include "Kernel/LambdaAffectorInterpolate.h"
+#include "Kernel/LambdaAffectorAccumulateLinear.h"
+#include "Kernel/AffectorCallbackInterface.h"
+#include "Kernel/Factory.h"
+#include "Kernel/FactoryPool.h"
+#include "Kernel/ValueInterpolator.h"
+#include "Kernel/Document.h"
 
 namespace Mengine
 {
     //////////////////////////////////////////////////////////////////////////
-    class BaseAffector
-        : public Affector
-    {
-    public:
-        BaseAffector();
-        ~BaseAffector() override;
-
-    public:
-        void setCallback( const AffectorCallbackInterfacePtr & _cb );
-        const AffectorCallbackInterfacePtr & getCallback() const;
-
-    protected:
-        void complete() override;
-
-    protected:
-        void end_( bool _isEnd );
-
-    protected:
-        AffectorCallbackInterfacePtr m_cb;
-    };
-    //////////////////////////////////////////////////////////////////////////
-    template<class L>
-    class LambdaAffector
-        : public BaseAffector
-    {
-    public:
-        LambdaAffector()
-        {
-        }
-
-        void setup( const L & _lambda )
-        {
-            m_lambda = _lambda;
-        }
-
-        template<class T>
-        void update( const T & _value )
-        {
-            m_lambda( _value );
-        }
-
-    protected:
-        L m_lambda;
-    };
-    //////////////////////////////////////////////////////////////////////////
-    template<class L, class T, template<class> class Accumulator>
-    class LambdaAffectorAccumulate
-        : public LambdaAffector<L>
-    {
-    protected:
-        bool _affect( float _current, float _timing ) override
-        {
-            T value;
-            bool finish = m_accumulator.update( _current, _timing, &value );
-
-            this->update( value );
-
-            if( finish == false )
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        void stop() override
-        {
-            m_accumulator.stop();
-
-            this->end_( false );
-        }
-
-    protected:
-        Accumulator<T> m_accumulator;
-    };
-    //////////////////////////////////////////////////////////////////////////
-    template<class L, class T, class Interpolator>
-    class LambdaAffectorInterpolate
-        : public LambdaAffector<L>
-    {
-    protected:
-        bool _affect( float _current, float _timing ) override
-        {
-            T value;
-            bool finish = m_interpolator.update( _current, _timing, &value );
-
-            this->update( value );
-
-            if( finish == false )
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        void stop() override
-        {
-            m_interpolator.stop();
-
-            this->end_( false );
-        }
-
-    protected:
-        Interpolator m_interpolator;
-    };
-    //////////////////////////////////////////////////////////////////////////
-    template<class L, class T>
-    class LambdaAffectorAccumulateLinear
-        : public LambdaAffectorAccumulate<L, T, ValueAccumulateLinear>
-    {
-    public:
-        bool initialize( const L & _lambda, const T & _start, const T & _dir, float _speed )
-        {
-            LambdaAffectorAccumulate<L, T, ValueAccumulateLinear>::setup( _lambda );
-
-            if( LambdaAffectorAccumulate<L, T, ValueAccumulateLinear>::m_accumulator.start( _start, _dir, _speed ) == false )
-            {
-                return false;
-            }
-
-            return true;
-        }
-    };
-    //////////////////////////////////////////////////////////////////////////
-    template<class L, class T>
+    template<class T>
     class LambdaAffectorInterpolateLinear
-        : public LambdaAffectorInterpolate<L, T, ValueInterpolatorLinear<T> >
+        : public LambdaAffectorInterpolate<T, ValueInterpolatorLinear<T> >
     {
     public:
-        bool initialize( const L & _lambda, const T & _start, const T & _end, float _time )
-        {
-            LambdaAffectorInterpolate<L, T, ValueInterpolatorLinear<T> >::setup( _lambda );
+        typedef typename LambdaAffector<T>::LambdaSettuper LambdaSettuper;
 
-            bool successful = LambdaAffectorInterpolate<L, T, ValueInterpolatorLinear<T> >::m_interpolator.start( _start, _end, _time );
+    public:
+        bool initialize( const LambdaSettuper & _lambda, const T & _start, const T & _end, float _time )
+        {
+            this->setSettuper( _lambda );
+
+            ValueInterpolatorLinear<T> & interpolator = this->getInterpolator();
+
+            bool successful = interpolator.start( _start, _end, _time );
 
             return successful;
         }
     };
     //////////////////////////////////////////////////////////////////////////
-    template<class L, class T>
+    template<class T>
     class LambdaAffectorInterpolateQuadratic
-        : public LambdaAffectorInterpolate<L, T, ValueInterpolatorQuadratic<T> >
+        : public LambdaAffectorInterpolate<T, ValueInterpolatorQuadratic<T> >
     {
     public:
-        bool initialize( const L & _lambda, const T & _start, const T & _end, const T & _v0, float _time )
-        {
-            LambdaAffectorInterpolate<L, T, ValueInterpolatorQuadratic<T> >::setup( _lambda );
+        typedef typename LambdaAffector<T>::LambdaSettuper LambdaSettuper;
 
-            bool successful = LambdaAffectorInterpolate<L, T, ValueInterpolatorQuadratic<T> >::m_interpolator.start( _start, _end, _v0, _time );
+    public:
+        bool initialize( const LambdaSettuper & _lambda, const T & _start, const T & _end, const T & _v0, float _time )
+        {
+            this->setSettuper( _lambda );
+
+            ValueInterpolatorQuadratic<T> & interpolator = this->getInterpolator();
+
+            bool successful = interpolator.start( _start, _end, _v0, _time );
 
             return successful;
         }
     };
     //////////////////////////////////////////////////////////////////////////
-    template<class L, class T, uint32_t N>
+    template<class T, uint32_t N>
     class LambdaAffectorInterpolateBezier
-        : public LambdaAffectorInterpolate<L, T, ValueInterpolatorBezier<T, N> >
+        : public LambdaAffectorInterpolate<T, ValueInterpolatorBezier<T, N> >
     {
     public:
-        bool initialize( const L & _lambda, const T & _start, const T & _end, const T * _v, float _time )
-        {
-            LambdaAffectorInterpolate<L, T, ValueInterpolatorBezier<T, N> >::setup( _lambda );
+        typedef Lambda<void( const T & )> LambdaSettuper;
+        typedef Lambda<T()> LambdaGetter;
+        typedef Lambda<void( T * )> LambdaPoints;
 
-            bool successful = LambdaAffectorInterpolate<L, T, ValueInterpolatorBezier<T, N> >::m_interpolator.start( _start, _end, _v, _time );
+    public:
+        bool initialize( const LambdaSettuper & _settuper, const LambdaGetter & _getterFrom, const LambdaGetter & _getterTo, const LambdaPoints & _getterPoints, float _time )
+        {
+            m_settuper = _settuper;
+            m_getterFrom = _getterFrom;
+            m_getterTo = _getterTo;
+            m_getterPoints = _getterPoints;
+
+            T from = _getterFrom();
+            T to = _getterTo();
+
+            T v[N];
+            _getterPoints( v );
+
+            ValueInterpolatorBezier<T, N> & interpolator = this->getInterpolator();
+
+            bool successful = interpolator.start( from, to, v, _time );
 
             return successful;
         }
+
+    protected:
+        bool _affect( const UpdateContext * _context, float * _used ) override
+        {
+            ValueInterpolatorBezier<T, N> & interpolator = this->getInterpolator();
+
+            T value1 = m_getterFrom();
+            interpolator.setValue1( value1 );
+
+            T value2 = m_getterTo();
+            interpolator.setValue2( value2 );
+
+            T v[N];
+            m_getterPoints( v );
+            interpolator.setV( v );
+
+            const EasingInterfacePtr & easing = this->getEasing();
+
+            T value;
+            bool finish = interpolator.update( easing, _context, &value, _used );
+
+            m_settuper( value );
+
+            return finish;
+        }
+
+        void _stop() override
+        {
+            ValueInterpolatorBezier<T, N> & interpolator = this->getInterpolator();
+
+            interpolator.stop();
+        }
+
+    protected:
+        LambdaSettuper m_settuper;
+        LambdaGetter m_getterFrom;
+        LambdaGetter m_getterTo;
+        LambdaPoints m_getterPoints;
     };
     //////////////////////////////////////////////////////////////////////////
     namespace NodeAffectorCreator
@@ -188,14 +129,14 @@ namespace Mengine
         class NodeAffectorCreatorAccumulateLinear
         {
         public:
-            typedef Lambda<void( T )> LambdaType;
-            typedef LambdaAffectorAccumulateLinear<LambdaType, T> AffectorType;
+            typedef LambdaAffectorAccumulateLinear<T> AffectorType;
+            typedef typename AffectorType::LambdaSettuper LambdaType;
             typedef IntrusivePtr<AffectorType> AffectorTypePtr;
 
         public:
             NodeAffectorCreatorAccumulateLinear()
+                : m_factory( new FactoryPool<AffectorType, 16>() )
             {
-                m_factory = new FactoryPool<AffectorType, 16>();
             }
 
             virtual ~NodeAffectorCreatorAccumulateLinear()
@@ -203,14 +144,16 @@ namespace Mengine
             }
 
         public:
-            AffectorPtr create( EAffectorType _type, const AffectorCallbackInterfacePtr & _cb
+            AffectorPtr create( EAffectorType _type 
+                , const EasingInterfacePtr & _easing
+                , const AffectorCallbackInterfacePtr & _cb
                 , const LambdaType & _lambda
                 , const T & _pos, const T & _dir, float _speed )
             {
-                AffectorTypePtr affector = m_factory->createObject();
+                AffectorTypePtr affector = m_factory->createObject( MENGINE_DOCUMENT_FUNCTION );
 
                 affector->setAffectorType( _type );
-
+                affector->setEasing( _easing );
                 affector->setCallback( _cb );
 
                 if( affector->initialize( _lambda, _pos, _dir, _speed ) == false )
@@ -218,7 +161,7 @@ namespace Mengine
                     return nullptr;
                 }
 
-                affector->update( _pos );
+                affector->callSettuper( _pos );
 
                 return affector;
             }
@@ -231,8 +174,8 @@ namespace Mengine
         class NodeAffectorCreatorInterpolateLinear
         {
         public:
-            typedef Lambda<void( T )> LambdaType;
-            typedef LambdaAffectorInterpolateLinear<LambdaType, T> AffectorType;
+            typedef LambdaAffectorInterpolateLinear<T> AffectorType;
+            typedef typename AffectorType::LambdaSettuper LambdaSettuper;
             typedef IntrusivePtr<AffectorType> AffectorTypePtr;
 
         public:
@@ -246,14 +189,16 @@ namespace Mengine
             }
 
         public:
-            AffectorPtr create( EAffectorType _type, const AffectorCallbackInterfacePtr & _cb
-                , const LambdaType & _lambda
+            AffectorPtr create( EAffectorType _type
+                , const EasingInterfacePtr & _easing
+                , const AffectorCallbackInterfacePtr & _cb
+                , const LambdaSettuper & _lambda
                 , const T & _start, const T & _end, float _time )
             {
-                AffectorTypePtr affector = m_factory->createObject();
+                AffectorTypePtr affector = m_factory->createObject( MENGINE_DOCUMENT_FUNCTION );
 
                 affector->setAffectorType( _type );
-
+                affector->setEasing( _easing );
                 affector->setCallback( _cb );
 
                 if( affector->initialize( _lambda, _start, _end, _time ) == false )
@@ -261,7 +206,7 @@ namespace Mengine
                     return nullptr;
                 }
 
-                affector->update( _start );
+                affector->callSettuper( _start );
 
                 return affector;
             }
@@ -274,8 +219,8 @@ namespace Mengine
         class NodeAffectorCreatorInterpolateQuadratic
         {
         public:
-            typedef Lambda<void( T )> LambdaType;
-            typedef LambdaAffectorInterpolateQuadratic<LambdaType, T> AffectorType;
+            typedef LambdaAffectorInterpolateQuadratic<T> AffectorType;
+            typedef typename AffectorType::LambdaSettuper LambdaSettuper;
             typedef IntrusivePtr<AffectorType> AffectorTypePtr;
 
         public:
@@ -289,14 +234,16 @@ namespace Mengine
             }
 
         public:
-            AffectorPtr create( EAffectorType _type, const AffectorCallbackInterfacePtr & _cb
-                , const LambdaType & _lambda
+            AffectorPtr create( EAffectorType _type
+                , const EasingInterfacePtr & _easing
+                , const AffectorCallbackInterfacePtr & _cb
+                , const LambdaSettuper & _lambda
                 , const T & _start, const T & _end, const T & _v0, float _time )
             {
-                AffectorTypePtr affector = m_factory->createObject();
+                AffectorTypePtr affector = m_factory->createObject( MENGINE_DOCUMENT_FUNCTION );
 
                 affector->setAffectorType( _type );
-
+                affector->setEasing( _easing );
                 affector->setCallback( _cb );
 
                 if( affector->initialize( _lambda, _start, _end, _v0, _time ) == false )
@@ -304,7 +251,7 @@ namespace Mengine
                     return nullptr;
                 }
 
-                affector->update( _start );
+                affector->callSettuper( _start );
 
                 return affector;
             }
@@ -317,8 +264,11 @@ namespace Mengine
         class NodeAffectorCreatorInterpolateBezier
         {
         public:
-            typedef Lambda<void( T )> LambdaType;
-            typedef LambdaAffectorInterpolateBezier<LambdaType, T, N> AffectorType;
+            typedef LambdaAffectorInterpolateBezier<T, N> AffectorType;
+            typedef typename AffectorType::LambdaSettuper LambdaSettuper;
+            typedef typename AffectorType::LambdaGetter LambdaGetter;
+            typedef typename AffectorType::LambdaPoints LambdaPoints;
+
             typedef IntrusivePtr<AffectorType> AffectorTypePtr;
 
         public:
@@ -332,22 +282,25 @@ namespace Mengine
             }
 
         public:
-            AffectorPtr create( EAffectorType _type, const AffectorCallbackInterfacePtr & _cb
-                , const LambdaType & _lambda
-                , const T & _start, const T & _end, const T * _v, float _time )
+            AffectorPtr create( EAffectorType _type
+                , const EasingInterfacePtr & _easing
+                , const AffectorCallbackInterfacePtr & _cb
+                , const LambdaSettuper & _settuper, const LambdaGetter & _getterFrom, const LambdaGetter & _getterTo, const LambdaPoints & _points
+                , float _time )
             {
-                AffectorTypePtr affector = m_factory->createObject();
+                AffectorTypePtr affector = m_factory->createObject( MENGINE_DOCUMENT_FUNCTION );
 
                 affector->setAffectorType( _type );
-
+                affector->setEasing( _easing );
                 affector->setCallback( _cb );
 
-                if( affector->initialize( _lambda, _start, _end, _v, _time ) == false )
+                if( affector->initialize( _settuper, _getterFrom, _getterTo, _points, _time ) == false )
                 {
                     return nullptr;
                 }
 
-                affector->update( _start );
+                T from = _getterFrom();
+                _settuper( from );
 
                 return affector;
             }
@@ -357,4 +310,4 @@ namespace Mengine
         };
         //////////////////////////////////////////////////////////////////////////
     }
-}	
+}

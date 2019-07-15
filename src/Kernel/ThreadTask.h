@@ -1,60 +1,72 @@
 #pragma once
 
-#include "Interface/ThreadInterface.h"
+#include "Config/Atomic.h"
 
-#include "Core/ServantBase.h"
+#include "Interface/ThreadTaskInterface.h"
+
+#include "Kernel/Factorable.h"
 #include "Kernel/Visitable.h"
 
-#include <atomic>
-
-namespace Mengine 
+namespace Mengine
 {
     //////////////////////////////////////////////////////////////////////////
-	class ThreadTask
-		: public ServantBase<ThreadTaskInterface>
+    class ThreadTask
+        : public ThreadTaskInterface
+        , public Factorable
         , public Visitable
-	{
+    {
         DECLARE_VISITABLE_BASE();
 
-	public:
-		ThreadTask();
-		~ThreadTask() override;
-		
-	public:
-		bool isRun() const override;
-		bool isComplete() const override;
-		bool isSuccessful() const override;
-		bool isCancel() const override;
+    public:
+        ThreadTask();
+        ~ThreadTask() override;
 
-	public:
-		void preparation() override;
-		void main() override;
+    public:
+        bool isRun() const override;
+        bool isComplete() const override;
+        bool isSuccessful() const override;
+        bool isCancel() const override;
 
-	public:
-		bool run() override;
-		bool cancel() override;
-		bool update() override;
-				
-	protected:
-		virtual void _onPreparation();
-		virtual bool _onMain();
+    public:
+        void preparation() override;
+        void main() override;
 
-	protected:
-		virtual bool _onRun();
-		virtual void _onCancel();
-		virtual void _onUpdate();
+    public:
+        bool run( const ThreadMutexInterfacePtr & _mutex ) override;
+        bool cancel() override;
+        bool update() override;
+		void finally() override;
 
-	protected:
-		virtual void _onComplete( bool _successful );
+    public:
+        void join() override;
 
-	private:
-		std::atomic_bool m_run;
-		std::atomic_bool m_complete;
-		std::atomic_bool m_finish;
-		std::atomic_bool m_successful;
-		std::atomic_bool m_cancel;				
-	};
+    protected:
+        virtual void _onPreparation();
+        virtual bool _onMain();
+
+    protected:
+        virtual bool _onRun();
+        virtual void _onCancel();
+		virtual void _onFinally();
+        virtual void _onUpdate();
+        virtual void _onJoin();
+
+    protected:
+        virtual void _onComplete( bool _successful );
+
+    protected:
+        const ThreadMutexInterfacePtr & getMutex() const;
+
+    private:
+        ThreadMutexInterfacePtr m_mutex;
+
+        AtomicBool m_run;
+        AtomicBool m_complete;
+        AtomicBool m_finish;
+        AtomicBool m_successful;
+        AtomicBool m_cancel;
+    };
     //////////////////////////////////////////////////////////////////////////
-	typedef IntrusivePtr<ThreadTask> ThreadTaskPtr;
+    typedef IntrusivePtr<ThreadTask, ThreadTaskInterface> ThreadTaskPtr;
     //////////////////////////////////////////////////////////////////////////
 }

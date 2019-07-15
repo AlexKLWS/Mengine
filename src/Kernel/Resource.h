@@ -1,122 +1,117 @@
 #pragma once
 
-#include "Interface/FileSystemInterface.h"
+#include "Interface/LoadableInterface.h"
+#include "Interface/FileGroupInterface.h"
 
-#include "Kernel/Loadable.h"
-
-#include "Kernel/Servant.h"
 #include "Kernel/Compilable.h"
 #include "Kernel/Identity.h"
-#include "Kernel/Reference.h"
-
 #include "Kernel/Scriptable.h"
 #include "Kernel/Visitable.h"
-#include "Kernel/Comable.h"
-
-#include "Kernel/ResourceHolder.h"
-
-#include "Factory/Factorable.h"
-#include "Factory/Factory.h"
-
-#include "Core/ConstString.h"
-#include "Core/FilePath.h"
+#include "Kernel/Unknowable.h"
+#include "Kernel/Contentable.h"
+#include "Kernel/Magicable.h"
+#include "Kernel/Factorable.h"
+#include "Kernel/Factory.h"
+#include "Kernel/ConstString.h"
+#include "Kernel/FilePath.h"
+#include "Kernel/Tags.h"
 
 namespace Mengine
 {
-    class ResourceVisitor;
-	
-	class Resource
-		: public Servant
-		, public Compilable
-		, public Identity
-		, public Reference
-		, public Loadable
+    class Resource
+        : public Factorable
+        , public Compilable
+        , public Contentable
+        , public Magicable
+        , public Identity
         , public Scriptable
-		, public Visitable
-	{
-		DECLARE_VISITABLE_BASE();
+        , public Visitable
+        , public Unknowable
+        , public LoadableInterface
+    {
+        DECLARE_VISITABLE_BASE();
 
-	public:
-		Resource();
-		~Resource() override;
-
-	public:
-		void setLocale( const ConstString & _locale );
-		inline const ConstString & getLocale() const;
-
-		void setCategory( const FileGroupInterfacePtr & _category );
-		inline const FileGroupInterfacePtr & getCategory() const;
-
-		void setGroupName( const ConstString & _groupName );
-		inline const ConstString & getGroupName() const;
-
-	public:
-		bool initialize();
-
-	protected:
-		virtual bool _initialize();
-
-	public:
-		bool isValid() const;
-
-    protected:
-        virtual bool _isValid() const;
-
-	public:
-		bool _loader( const Metabuf::Metadata * _parser ) override;
-		
     public:
-        bool convert();
+        Resource();
+        ~Resource() override;
+
+    public:
+        void setLocale( const ConstString & _locale );
+        MENGINE_INLINE const ConstString & getLocale() const;
+
+        void setFileGroup( const FileGroupInterfacePtr & _fileGroup );
+        MENGINE_INLINE const FileGroupInterfacePtr & getFileGroup() const;
+
+        void setGroupName( const ConstString & _groupName );
+        MENGINE_INLINE const ConstString & getGroupName() const;
+
+    public:
+        void setTags( const Tags & _tags );
+        const Tags & getTags() const;
+
+    public:
+        bool initialize();
 
     protected:
-        virtual bool _convert();
+        virtual bool _initialize();
 
-	protected:
-		bool convertDefault2_( const ConstString & _converter, const FilePath & _path, FilePath & _out );
-		bool convertDefault_( const ConstString & _converter, const FilePath & _path, FilePath & _out, ConstString & _codecType );
+    public:
+        bool compile() override;
+        void release() override;
 
-	public:
-		bool cache();
-		void uncache();
+    public:
+        MENGINE_INLINE uint32_t getCompileReferenceCount() const;
 
-	public:
-		inline bool isCache() const;
+    public:
+        bool cache();
+        void uncache();
 
-	protected:
-		virtual void _cache();
-		virtual void _uncache();
+    public:
+        MENGINE_INLINE bool isCache() const;
 
-	protected:
-		bool _incrementZero() override;
-		void _decrementZero() override;
+    protected:
+        virtual void _cache();
+        virtual void _uncache();
 
-	protected:       
-		ConstString m_locale;
-        FileGroupInterfacePtr m_category;
-		ConstString m_groupName;
+    protected:
+        uint32_t m_compileReferenceCount;
 
-		bool m_cache;
-	};
+        ConstString m_locale;
+        FileGroupInterfacePtr m_fileGroup;
+        ConstString m_groupName;
+        Tags m_tags;
+
+        bool m_cache;
+    };
+    //////////////////////////////////////////////////////////////////////////
+    typedef IntrusivePtr<Resource> ResourcePtr;
+    //////////////////////////////////////////////////////////////////////////
+    MENGINE_INLINE const ConstString & Resource::getLocale() const
+    {
+        return m_locale;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    MENGINE_INLINE const FileGroupInterfacePtr & Resource::getFileGroup() const
+    {
+        return m_fileGroup;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    MENGINE_INLINE const ConstString & Resource::getGroupName() const
+    {
+        return m_groupName;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    MENGINE_INLINE uint32_t Resource::getCompileReferenceCount() const
+    {
+        return m_compileReferenceCount;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    MENGINE_INLINE bool Resource::isCache() const
+    {
+        return m_cache;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    template<class T>
+    using IntrusiveResourcePtr = IntrusivePtr<T, Resource>;
 	//////////////////////////////////////////////////////////////////////////
-	typedef IntrusivePtr<Resource> ResourcePtr;
-	//////////////////////////////////////////////////////////////////////////
-	inline const ConstString & Resource::getLocale() const
-	{
-		return m_locale;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	inline const FileGroupInterfacePtr & Resource::getCategory() const
-	{
-		return m_category;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	inline const ConstString & Resource::getGroupName() const
-	{
-		return m_groupName;
-	}
-	//////////////////////////////////////////////////////////////////////////
-	inline bool Resource::isCache() const
-	{
-		return m_cache;
-	}
 }

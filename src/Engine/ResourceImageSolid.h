@@ -3,27 +3,23 @@
 #include "Kernel/ResourceImage.h"
 
 #include "Config/Typedef.h"
-#include "Core/ColourValue.h"
+#include "Kernel/Color.h"
 
 namespace Mengine
 {
-	class ResourceImageSolid
-		: public ResourceImage
-	{
-		DECLARE_VISITABLE( ResourceImage );
+    class ResourceImageSolid
+        : public ResourceImage
+    {
+        DECLARE_VISITABLE( ResourceImage );
 
-	public:
-		ResourceImageSolid();
+    public:
+        ResourceImageSolid();
+        ~ResourceImageSolid() override;
 
-	protected:
-		bool _isValid() const override;
-
-	protected:
-		bool _loader( const Metabuf::Metadata * _parser ) override;
-
-	protected:
-		bool _compile() override;				
-	};
-	//////////////////////////////////////////////////////////////////////////
-	typedef IntrusivePtr<ResourceImageSolid> ResourceImageSolidPtr;
+    protected:
+        bool _compile() override;
+    };
+    //////////////////////////////////////////////////////////////////////////
+    typedef IntrusivePtr<ResourceImageSolid> ResourceImageSolidPtr;
+    //////////////////////////////////////////////////////////////////////////
 }

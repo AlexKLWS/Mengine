@@ -2,46 +2,33 @@
 
 #include "Kernel/ResourceImage.h"
 
-#include "Config/Typedef.h"
+#include "Kernel/Content.h"
 
 namespace Mengine
 {
-	class ResourceImageDefault
-		: public ResourceImage
-	{
-		DECLARE_VISITABLE( ResourceImage );
-
-	public:
-		ResourceImageDefault();
-        
-	public:
-		bool setup( const FilePath & _imagePath, const ConstString & _codecType, const mt::uv4f & _uv_image, const mt::uv4f & _uv_alpha, const mt::vec2f & _maxSize );
+    class ResourceImageDefault
+        : public ResourceImage
+        , public Content
+    {
+        DECLARE_VISITABLE( ResourceImage );
+        DECLARE_CONTENTABLE();
 
     public:
-        const FilePath & getFilePath() const;
-        const ConstString & getCodecType() const;
-        
-	protected:
-		bool _isValid() const override;
+        ResourceImageDefault();
+        ~ResourceImageDefault() override;
 
-	protected:
-		bool _loader( const Metabuf::Metadata * _parser ) override;
-		bool _convert() override;
+    public:
+        bool setup( const FilePath & _imagePath, const ConstString & _codecType, const mt::uv4f & _uv_image, const mt::uv4f & _uv_alpha, const mt::vec2f & _maxSize );
 
-	protected:
-		bool _compile() override;
-		void _release() override;
+    protected:
+        bool _compile() override;
 
-	protected:
-		void prepareImageFrame_();
+    public:
+        void correctUVTexture();
 
-	protected:
-        FilePath m_filePath;
-        ConstString m_codecType;
-		ConstString m_converter;
-
-		bool m_validNoExist;
-	};
-	//////////////////////////////////////////////////////////////////////////
-	typedef IntrusivePtr<ResourceImageDefault> ResourceImageDefaultPtr;
+    protected:
+        void prepareImageFrame_();
+    };
+    //////////////////////////////////////////////////////////////////////////
+    typedef IntrusivePtr<ResourceImageDefault> ResourceImageDefaultPtr;
 }

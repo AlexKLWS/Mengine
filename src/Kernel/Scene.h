@@ -3,6 +3,7 @@
 #include "Kernel/Entity.h"
 #include "Kernel/Scriptable.h"
 #include "Kernel/Layer.h"
+#include "Kernel/DummyPicker.h"
 
 #include "math/vec3.h"
 #include "math/vec4.h"
@@ -12,40 +13,46 @@ namespace Mengine
     //////////////////////////////////////////////////////////////////////////
     enum SceneEventFlag
     {
-        EVENT_APP_MOUSE_LEAVE = __EVENT_ENTITY_LAST__,
-        EVENT_APP_MOUSE_ENTER,
-        EVENT_FOCUS,
-        EVENT_ON_SUB_SCENE,
+        EVENT_SCENE_APP_MOUSE_LEAVE = __EVENT_ENTITY_LAST__,
+        EVENT_SCENE_APP_MOUSE_ENTER,
+        EVENT_SCENE_FOCUS,
     };
     //////////////////////////////////////////////////////////////////////////
     class SceneEventReceiver
-        : public EventReceiver
+        : public EntityEventReceiver
     {
     public:
-        virtual bool onSceneAppMouseLeave( const pybind::object & _object ) = 0;
-        virtual bool onSceneAppMouseEnter( const pybind::object & _object ) = 0;
-        virtual bool onSceneAppFocus( const pybind::object & _object, bool _focus ) = 0;
+        virtual bool onSceneAppMouseLeave( const EntityBehaviorInterfacePtr & _behavior ) = 0;
+        virtual bool onSceneAppMouseEnter( const EntityBehaviorInterfacePtr & _behavior ) = 0;
+        virtual bool onSceneAppFocus( const EntityBehaviorInterfacePtr & _behavior, bool _focus ) = 0;
     };
     //////////////////////////////////////////////////////////////////////////
     typedef IntrusivePtr<SceneEventReceiver> SceneEventReceiverPtr;
     //////////////////////////////////////////////////////////////////////////
     class Scene
-		: public Entity
-	{
-        EVENT_RECEIVER( SceneEventReceiver );
-
-	public:
-		Scene();
-		~Scene() override;
-			
-	public:
-		void onAppMouseLeave();
-		void onAppMouseEnter();
+        : public Entity
+        , public DummyPicker
+    {
+        DECLARE_VISITABLE( Entity );
+        DECLARE_EVENTABLE_TYPE( SceneEventReceiver );
+        DECLARE_PICKER();
 
     public:
-		void onFocus( bool _focus );
-	};
+        Scene();
+        ~Scene() override;
+
+    public:
+        void onAppMouseLeave();
+        void onAppMouseEnter();
+
+    public:
+        void onFocus( bool _focus );
+
+    protected:
+        const RenderViewportInterfacePtr & getPickerViewport() const override;
+        const RenderCameraInterfacePtr & getPickerCamera() const override;
+    };
     //////////////////////////////////////////////////////////////////////////
-    typedef IntrusivePtr<Scene> ScenePtr;
+    typedef IntrusiveNodePtr<Scene> ScenePtr;
     //////////////////////////////////////////////////////////////////////////
 }
