@@ -257,7 +257,7 @@ namespace Mengine
         float linesOffset = this->calcLinesOffset( lineOffset, _font );
 
         mt::vec2f base_offset( 0.f, 0.f );
-        base_offset.y = linesOffset;
+        base_offset.y = linesOffset * m_autoScaleFactor;
 
         TextRenderChunk chunk;
         chunk.vertex_begin = 0;
@@ -308,7 +308,7 @@ namespace Mengine
 
                         line.advanceCharOffset( cd, charScale * m_autoScaleFactor, offset2 );
 
-                        RenderMaterialInterfacePtr material = this->getMaterial3( materialId, PT_TRIANGLELIST, 1, &cd.textureMask, &cd.texture, MENGINE_DOCUMENT_FUNCTION );
+                        RenderMaterialInterfacePtr material = this->getMaterial3( materialId, PT_TRIANGLELIST, 1, &cd.texture, MENGINE_DOCUMENT_FUNCTION );
 
                         if( chunk.material == material )
                         {

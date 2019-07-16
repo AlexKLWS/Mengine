@@ -31,6 +31,7 @@
 #include "Interface/ModuleServiceInterface.h"
 #include "Interface/SceneServiceInterface.h"
 #include "Interface/ScriptWrapperInterface.h"
+#include "Interface/ChronometerServiceInterface.h"
 
 #include "Kernel/Document.h"
 #include "Kernel/Logger.h"
@@ -57,7 +58,6 @@
 #include "Kernel/ImageDecoderArchive.h"
 #include "Kernel/DecoderFactory.h"
 #include "Kernel/String.h"
-#include "Kernel/IniUtil.h"
 
 #include "Config/Config.h"
 #include "Config/Stringstream.h"
@@ -591,14 +591,14 @@ namespace Mengine
         return true;
     }
     //////////////////////////////////////////////////////////////////////////
-    bool Application::initializeGame( const FileGroupInterfacePtr & _fileGroup, const FilePath & _resourceIniPath )
+    bool Application::initializeGame( const FileGroupInterfacePtr & _fileGroup, const VectorFilePath & _resourcePaths )
     {
-        if( _resourceIniPath.empty() == false )
+        for( const FilePath & resourcePath : _resourcePaths )
         {
             if( PACKAGE_SERVICE()
-                ->loadPackages( _fileGroup, _resourceIniPath, MENGINE_DOCUMENT_FUNCTION ) == false )
+                ->loadPackages( _fileGroup, resourcePath, MENGINE_DOCUMENT_FUNCTION ) == false )
             {
-                LOGGER_CRITICAL( "Application invalid load resource packs"
+                LOGGER_CRITICAL( "invalid load resource packs"
                 );
 
                 return false;
@@ -1243,7 +1243,11 @@ namespace Mengine
         INPUT_SERVICE()
             ->update();
 
-        if( PLAYER_SERVICE()->update() == false )
+        CHRONOMETER_SERVICE()
+            ->update();
+
+        if( PLAYER_SERVICE()
+            ->update() == false )
         {
             this->quit();
 
